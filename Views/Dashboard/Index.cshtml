@@ -1,0 +1,93 @@
+@model DashboardViewModel
+@{ ViewData["Title"] = "Dashboard"; }
+
+<h2 class="mb-3"><i class="bi bi-bar-chart-line"></i> Productivity Dashboard</h2>
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="card text-bg-primary h-100"><div class="card-body">
+            <div class="small">Completed today</div>
+            <div class="display-6">@Model.CompletedToday / @Model.PlannedToday</div>
+            <div class="small">@Model.TodayCompletionRate% completion</div>
+        </div></div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card text-bg-success h-100"><div class="card-body">
+            <div class="small">Weekly completion rate</div>
+            <div class="display-6">@Model.WeeklyCompletionRate%</div>
+            <div class="small">last 7 days</div>
+        </div></div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card text-bg-warning h-100"><div class="card-body">
+            <div class="small">Carry-forward rate</div>
+            <div class="display-6">@Model.CarryForwardRate%</div>
+            <div class="small">lower is better</div>
+        </div></div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card text-bg-dark h-100"><div class="card-body">
+            <div class="small">🔥 Current streak</div>
+            <div class="display-6">@Model.CurrentStreak</div>
+            <div class="small">longest: @Model.LongestStreak days</div>
+        </div></div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-7">
+        <div class="card h-100"><div class="card-body">
+            <h5 class="card-title">Last 7 days</h5>
+            <canvas id="trendChart" height="140"></canvas>
+        </div></div>
+    </div>
+    <div class="col-lg-5">
+        <div class="card h-100"><div class="card-body">
+            <h5 class="card-title">Category performance</h5>
+            @if (!Model.CategoryPerformance.Any())
+            {
+                <p class="text-muted">No data yet.</p>
+            }
+            else
+            {
+                <table class="table table-sm">
+                    <thead><tr><th>Category</th><th>Done</th><th>Rate</th></tr></thead>
+                    <tbody>
+                    @foreach (var c in Model.CategoryPerformance)
+                    {
+                        <tr>
+                            <td>@c.Category</td>
+                            <td>@c.Completed / @c.Total</td>
+                            <td>
+                                <div class="progress" style="height:16px;">
+                                    <div class="progress-bar" style="width:@c.Rate%">@c.Rate%</div>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            }
+        </div></div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script>
+        const labels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Trend.Select(t => t.Date.ToString("ddd"))));
+        const completed = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Trend.Select(t => t.Completed)));
+        const planned = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Trend.Select(t => t.Planned)));
+        new Chart(document.getElementById('trendChart'), {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    { label: 'Completed', data: completed, backgroundColor: '#198754' },
+                    { label: 'Planned', data: planned, backgroundColor: '#0d6efd' }
+                ]
+            },
+            options: { responsive: true, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+        });
+    </script>
+}

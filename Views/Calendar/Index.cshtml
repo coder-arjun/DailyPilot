@@ -1,0 +1,47 @@
+@model CalendarViewModel
+@{ ViewData["Title"] = "Calendar"; }
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0"><i class="bi bi-calendar3"></i> @Model.MonthName</h2>
+    <div class="btn-group">
+        <a class="btn btn-outline-secondary" asp-action="Index" asp-route-year="@Model.PrevMonth.Year" asp-route-month="@Model.PrevMonth.Month"><i class="bi bi-chevron-left"></i></a>
+        <a class="btn btn-outline-secondary" asp-action="Index">This month</a>
+        <a class="btn btn-outline-secondary" asp-action="Index" asp-route-year="@Model.NextMonth.Year" asp-route-month="@Model.NextMonth.Month"><i class="bi bi-chevron-right"></i></a>
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-bordered text-center align-middle calendar-grid">
+        <thead>
+            <tr>
+                @foreach (var d in new[] { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" })
+                {
+                    <th class="small">@d</th>
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @for (int week = 0; week < 6; week++)
+            {
+                <tr>
+                    @for (int dow = 0; dow < 7; dow++)
+                    {
+                        var day = Model.Days[week * 7 + dow];
+                        <td class="calendar-cell @(day.InMonth ? "" : "text-muted bg-body-secondary") @(day.IsToday ? "border-primary border-2" : "")">
+                            <a class="d-block text-decoration-none text-reset" asp-controller="Tasks" asp-action="Index" asp-route-date="@day.Date.ToString("yyyy-MM-dd")">
+                                <div class="fw-@(day.IsToday ? "bold" : "normal")">@day.Date.Day</div>
+                                @if (day.Planned > 0)
+                                {
+                                    <span class="badge rounded-pill @(day.Completed == day.Planned ? "bg-success" : "bg-primary")">
+                                        @day.Completed/@day.Planned
+                                    </span>
+                                }
+                            </a>
+                        </td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+<p class="text-muted small">Click any day to view or plan its tasks.</p>

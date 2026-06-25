@@ -1,0 +1,88 @@
+@model WorkspacesIndexViewModel
+@{ ViewData["Title"] = "Workspaces"; }
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0"><i class="bi bi-people"></i> Workspaces</h2>
+    <button class="btn btn-primary" data-bs-toggle="collapse" data-bs-target="#newWs"><i class="bi bi-plus-lg"></i> New workspace</button>
+</div>
+
+<div class="collapse mb-3" id="newWs">
+    <div class="card"><div class="card-body">
+        <form asp-action="Create" method="post" class="row g-2 align-items-end">
+            @Html.AntiForgeryToken()
+            <div class="col-md-5">
+                <label class="form-label">Name</label>
+                <input name="name" class="form-control" required maxlength="100" placeholder="e.g. Marketing Team" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Description</label>
+                <input name="description" class="form-control" maxlength="300" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Colour</label>
+                <input name="color" type="color" value="#0d6efd" class="form-control form-control-color" />
+            </div>
+            <div class="col-md-1">
+                <button class="btn btn-primary w-100" type="submit">Add</button>
+            </div>
+        </form>
+    </div></div>
+</div>
+
+@if (Model.PendingInvitations.Any())
+{
+    <div class="card border-warning mb-3"><div class="card-body">
+        <h5 class="card-title"><i class="bi bi-envelope-paper"></i> Pending invitations</h5>
+        @foreach (var inv in Model.PendingInvitations)
+        {
+            <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                <span>You've been invited to <strong>@inv.Workspace?.Name</strong> as <span class="badge bg-secondary">@inv.Role</span></span>
+                <form asp-action="AcceptInvitation" method="post" class="m-0">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="token" value="@inv.Token" />
+                    <button class="btn btn-sm btn-success" type="submit">Accept</button>
+                </form>
+            </div>
+        }
+    </div></div>
+}
+
+@if (!Model.Workspaces.Any())
+{
+    <div class="text-center text-muted py-5">
+        <i class="bi bi-people" style="font-size:3rem;"></i>
+        <p class="mt-2">You're not in any workspaces yet. Create one to collaborate with your team!</p>
+    </div>
+}
+else
+{
+    <div class="row g-3">
+        @foreach (var ws in Model.Workspaces)
+        {
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 @(Model.CurrentWorkspaceId == ws.Id ? "border-primary border-2" : "")">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <span class="badge" style="background-color:@ws.Color">&nbsp;</span>
+                            @ws.Name
+                            @if (Model.CurrentWorkspaceId == ws.Id) { <span class="badge bg-primary">Active</span> }
+                        </h5>
+                        @if (!string.IsNullOrWhiteSpace(ws.Description))
+                        {
+                            <p class="text-muted small">@ws.Description</p>
+                        }
+                        <div class="d-flex gap-2">
+                            <a class="btn btn-sm btn-outline-secondary" asp-action="Details" asp-route-id="@ws.Id"><i class="bi bi-gear"></i> Manage</a>
+                            <a class="btn btn-sm btn-outline-secondary" asp-action="Board" asp-route-id="@ws.Id"><i class="bi bi-kanban"></i> Board</a>
+                            <form asp-action="Switch" method="post" class="m-0 ms-auto">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@ws.Id" />
+                                <button class="btn btn-sm btn-primary" type="submit">Switch to</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}

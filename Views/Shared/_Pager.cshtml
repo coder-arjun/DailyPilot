@@ -1,0 +1,47 @@
+@model PagerViewModel
+@{
+    if (Model.TotalPages <= 1) { return; }
+
+    string Href(int page)
+    {
+        var rv = new Microsoft.AspNetCore.Routing.RouteValueDictionary();
+        foreach (var kv in Model.RouteValues)
+            if (!string.IsNullOrEmpty(kv.Value)) rv[kv.Key] = kv.Value;
+        rv["page"] = page;
+        return Url.Action(Model.Action, Model.Controller, rv) ?? "#";
+    }
+
+    int start = Math.Max(1, Model.Page - 2);
+    int end = Math.Min(Model.TotalPages, Model.Page + 2);
+}
+
+<nav aria-label="Pagination" class="mt-4">
+    <ul class="pagination justify-content-center">
+        <li class="page-item @(Model.Page <= 1 ? "disabled" : "")">
+            <a class="page-link" href="@Href(Model.Page - 1)" aria-label="Previous"><i class="bi bi-chevron-left"></i></a>
+        </li>
+
+        @if (start > 1)
+        {
+            <li class="page-item"><a class="page-link" href="@Href(1)">1</a></li>
+            if (start > 2) { <li class="page-item disabled"><span class="page-link">…</span></li> }
+        }
+
+        @for (int i = start; i <= end; i++)
+        {
+            <li class="page-item @(i == Model.Page ? "active" : "")">
+                <a class="page-link" href="@Href(i)">@i</a>
+            </li>
+        }
+
+        @if (end < Model.TotalPages)
+        {
+            if (end < Model.TotalPages - 1) { <li class="page-item disabled"><span class="page-link">…</span></li> }
+            <li class="page-item"><a class="page-link" href="@Href(Model.TotalPages)">@Model.TotalPages</a></li>
+        }
+
+        <li class="page-item @(Model.Page >= Model.TotalPages ? "disabled" : "")">
+            <a class="page-link" href="@Href(Model.Page + 1)" aria-label="Next"><i class="bi bi-chevron-right"></i></a>
+        </li>
+    </ul>
+</nav>

@@ -1,0 +1,48 @@
+@model List<Category>
+@{ ViewData["Title"] = "Categories"; }
+
+<h2 class="mb-3"><i class="bi bi-tags"></i> Categories</h2>
+
+<div class="row">
+    <div class="col-md-5">
+        <div class="card mb-3"><div class="card-body">
+            <h5 class="card-title">Add category</h5>
+            <form asp-action="Create" method="post" class="row g-2 align-items-end">
+                @Html.AntiForgeryToken()
+                <div class="col-7">
+                    <label class="form-label">Name</label>
+                    <input name="name" class="form-control" required maxlength="60" />
+                </div>
+                <div class="col-3">
+                    <label class="form-label">Colour</label>
+                    <input name="color" type="color" class="form-control form-control-color" value="#0d6efd" />
+                </div>
+                <div class="col-2">
+                    <button type="submit" class="btn btn-primary w-100"><i class="bi bi-plus-lg"></i></button>
+                </div>
+            </form>
+        </div></div>
+    </div>
+    <div class="col-md-7">
+        @if (!Model.Any())
+        {
+            <p class="text-muted">No categories yet.</p>
+        }
+        else
+        {
+            <ul class="list-group">
+                @foreach (var c in Model)
+                {
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span><span class="badge" style="background-color:@c.Color">&nbsp;</span> @c.Name</span>
+                        <form asp-action="Delete" method="post" onsubmit="return confirm('Delete this category? Tasks will be uncategorised.');">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@c.Id" />
+                            <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                        </form>
+                    </li>
+                }
+            </ul>
+        }
+    </div>
+</div>

@@ -1,0 +1,72 @@
+@model ApplicationUser
+@using Microsoft.AspNetCore.Mvc.Rendering
+@{
+    ViewData["Title"] = "Settings";
+    var timeZones = ViewBag.TimeZones as List<SelectListItem>;
+}
+
+<h2 class="mb-3"><i class="bi bi-gear"></i> Settings</h2>
+
+<form asp-action="Index" method="post">
+    @Html.AntiForgeryToken()
+
+    <div class="row g-3">
+        <div class="col-lg-6">
+            <div class="card h-100"><div class="card-body">
+                <h5 class="card-title">Profile</h5>
+                <div class="mb-3">
+                    <label asp-for="DisplayName" class="form-label">Display name</label>
+                    <input asp-for="DisplayName" class="form-control" />
+                </div>
+                <div class="mb-3">
+                    <label asp-for="TimeZoneId" class="form-label">Time zone</label>
+                    <select asp-for="TimeZoneId" asp-items="timeZones" class="form-select"></select>
+                    <div class="form-text">Used to determine your “today” and when tasks carry forward.</div>
+                </div>
+            </div></div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card h-100"><div class="card-body">
+                <h5 class="card-title">Notifications</h5>
+                <div class="form-check form-switch mb-2">
+                    <input asp-for="EnableMorningReminder" class="form-check-input" />
+                    <label asp-for="EnableMorningReminder" class="form-check-label">Morning briefing</label>
+                </div>
+                <div class="mb-3">
+                    <label asp-for="MorningReminderTime" class="form-label">Morning time</label>
+                    <input asp-for="MorningReminderTime" type="time" class="form-control" style="max-width:160px;" />
+                </div>
+                <div class="form-check form-switch mb-2">
+                    <input asp-for="EnableEndOfDayReminder" class="form-check-input" />
+                    <label asp-for="EnableEndOfDayReminder" class="form-check-label">End-of-day summary</label>
+                </div>
+                <div class="mb-3">
+                    <label asp-for="EndOfDayReminderTime" class="form-label">End-of-day time</label>
+                    <input asp-for="EndOfDayReminderTime" type="time" class="form-control" style="max-width:160px;" />
+                </div>
+                <div class="form-check form-switch">
+                    <input asp-for="EnableEmailNotifications" class="form-check-input" />
+                    <label asp-for="EnableEmailNotifications" class="form-check-label">Email notifications</label>
+                </div>
+            </div></div>
+        </div>
+
+        <div class="col-12">
+            <div class="card"><div class="card-body">
+                <h5 class="card-title">Preferences</h5>
+                <div class="row">
+                    <div class="col-md-6 form-check form-switch mb-2 ms-1">
+                        <input asp-for="EnableAutoCarryForward" class="form-check-input" />
+                        <label asp-for="EnableAutoCarryForward" class="form-check-label">Automatically carry forward unfinished tasks</label>
+                    </div>
+                    <div class="col-md-6 ms-1 text-muted small d-flex align-items-center">
+                        <i class="bi bi-palette me-2"></i> Appearance is controlled by the theme picker in the top bar.
+                    </div>
+                </div>
+            </div></div>
+        </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary mt-3"><i class="bi bi-check-lg"></i> Save settings</button>
+</form>

@@ -1,0 +1,116 @@
+@model SearchViewModel
+@using System.Text.Encodings.Web
+@{
+    ViewData["Title"] = "Search";
+
+    Func<string, Microsoft.AspNetCore.Html.IHtmlContent> Highlight = (text) =>
+    {
+        var encoded = HtmlEncoder.Default.Encode(text ?? string.Empty);
+        if (!string.IsNullOrWhiteSpace(Model.Query))
+        {
+            var pattern = System.Text.RegularExpressions.Regex.Escape(Model.Query);
+            encoded = System.Text.RegularExpressions.Regex.Replace(encoded, pattern, m => $"<mark>{m.Value}</mark>",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        }
+        return new Microsoft.AspNetCore.Html.HtmlString(encoded);
+    };
+
+    var taskPager = new PagerViewModel
+    {
+        Page = Model.TaskPage,
+        TotalPages = Model.TaskTotalPages,
+        Action = "Index",
+        Controller = "Search",
+        RouteValues = new Dictionary<string, string?> { ["q"] = Model.Query }
+    };
+}
+
+<h2 class="mb-3"><i class="bi bi-search"></i> Search</h2>
+
+@if (string.IsNullOrWhiteSpace(Model.Query))
+{
+    <p class="text-muted">Use the search box in the top bar to search across everything in your account.</p>
+    return;
+}
+
+<p class="text-muted">@Model.TotalResults result(s) for “<strong>@Model.Query</strong>”.</p>
+
+@if (Model.TotalResults == 0)
+{
+    <div class="text-center text-muted py-5">
+        <i class="bi bi-emoji-frown" style="font-size:3rem;"></i>
+        <p class="mt-2">No matches found.</p>
+    </div>
+}
+
+@if (Model.Tasks.Any())
+{
+    <div class="card mb-3"><div class="card-body">
+        <h5 class="card-title"><i class="bi bi-check2-square"></i> Tasks</h5>
+        <div class="list-group list-group-flush">
+            @foreach (var t in Model.Tasks)
+            {
+                <a class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+                   asp-controller="Tasks" asp-action="Edit" asp-route-id="@t.Id">
+                    <span>@Highlight(t.Title)
+                        @if (t.Category is not null) { <span class="dp-chip text-white ms-1" style="background-color:@t.Category.Color">@t.Category.Name</span> }
+                    </span>
+                    <small class="text-muted">@t.PlannedDate.ToString("dd MMM yyyy")</small>
+                </a>
+            }
+        </div>
+        <partial name="_Pager" model="taskPager" />
+    </div></div>
+}
+
+@if (Model.Habits.Any())
+{
+    <div class="card mb-3"><div class="card-body">
+        <h5 class="card-title"><i class="bi bi-trophy"></i> Habits</h5>
+        <div class="d-flex flex-wrap gap-2">
+            @foreach (var h in Model.Habits)
+            {
+                <a class="btn btn-sm btn-outline-secondary" asp-controller="Habits" asp-action="Index">@Highlight(h.Name)</a>
+            }
+        </div>
+    </div></div>
+}
+
+@if (Model.Categories.Any() || Model.Tags.Any())
+{
+    <div class="card mb-3"><div class="card-body">
+        @if (Model.Categories.Any())
+        {
+            <h5 class="card-title"><i class="bi bi-tags"></i> Categories</h5>
+            <div class="d-flex flex-wrap gap-2 mb-3">
+                @foreach (var c in Model.Categories)
+                {
+                    <a class="btn btn-sm" style="background-color:@c.Color;color:#fff" asp-controller="Tasks" asp-action="Index" asp-route-categoryId="@c.Id">@Highlight(c.Name)</a>
+                }
+            </div>
+        }
+        @if (Model.Tags.Any())
+        {
+            <h6 class="text-muted"><i class="bi bi-tag"></i> Tags</h6>
+            <div class="d-flex flex-wrap gap-2">
+                @foreach (var tag in Model.Tags)
+                {
+                    <a class="btn btn-sm btn-outline-secondary" asp-controller="Tasks" asp-action="Index" asp-route-tagId="@tag.Id">@Highlight(tag.Name)</a>
+                }
+            </div>
+        }
+    </div></div>
+}
+
+@if (Model.Workspaces.Any())
+{
+    <div class="card mb-3"><div class="card-body">
+        <h5 class="card-title"><i class="bi bi-people"></i> Workspaces</h5>
+        <div class="d-flex flex-wrap gap-2">
+            @foreach (var w in Model.Workspaces)
+            {
+                <a class="btn btn-sm btn-outline-primary" asp-controller="Workspaces" asp-action="Details" asp-route-id="@w.Id">@Highlight(w.Name)</a>
+            }
+        </div>
+    </div></div>
+}

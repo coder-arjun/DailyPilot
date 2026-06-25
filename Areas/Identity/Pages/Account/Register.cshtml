@@ -1,0 +1,79 @@
+@page
+@model RegisterModel
+@{
+    ViewData["Title"] = "Register";
+}
+
+<div class="dp-auth">
+    <div class="dp-auth-card">
+        <div class="text-center mb-4">
+            <span class="dp-auth-logo"><i class="bi bi-compass-fill"></i></span>
+            <h1 class="h3 mt-3 mb-1">Create your account</h1>
+            <p class="text-muted mb-0">Plan. Complete. Move Forward.</p>
+        </div>
+
+        <form id="registerForm" asp-route-returnUrl="@Model.ReturnUrl" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger small mb-2" role="alert"></div>
+
+            <div class="mb-3">
+                <label asp-for="Input.DisplayName" class="form-label"></label>
+                <input asp-for="Input.DisplayName" class="form-control" placeholder="Your name" autofocus />
+                <span asp-validation-for="Input.DisplayName" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Input.Email" class="form-label"></label>
+                <input asp-for="Input.Email" class="form-control" placeholder="name@example.com" autocomplete="username" />
+                <span asp-validation-for="Input.Email" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Input.TimeZoneId" class="form-label"></label>
+                <select asp-for="Input.TimeZoneId" asp-items="Model.TimeZones" class="form-select"></select>
+                <div class="form-text">Determines your “today” and when unfinished tasks carry forward.</div>
+                <span asp-validation-for="Input.TimeZoneId" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Input.Password" class="form-label"></label>
+                <div class="input-group">
+                    <input asp-for="Input.Password" id="Input_Password" class="form-control" autocomplete="new-password" placeholder="At least 8 characters" />
+                    <button class="btn btn-outline-secondary dp-pw-toggle" type="button" data-pw-toggle="#Input_Password" tabindex="-1" title="Show / hide password">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                </div>
+                <span asp-validation-for="Input.Password" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Input.ConfirmPassword" class="form-label"></label>
+                <div class="input-group">
+                    <input asp-for="Input.ConfirmPassword" id="Input_ConfirmPassword" class="form-control" autocomplete="new-password" placeholder="Re-enter your password" />
+                    <button class="btn btn-outline-secondary dp-pw-toggle" type="button" data-pw-toggle="#Input_ConfirmPassword" tabindex="-1" title="Show / hide password">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                </div>
+                <span asp-validation-for="Input.ConfirmPassword" class="text-danger small"></span>
+            </div>
+
+            <button id="registerSubmit" type="submit" class="w-100 btn btn-primary btn-lg">Create account</button>
+        </form>
+
+        <p class="text-center text-muted mt-4 mb-0">
+            Already have an account? <a asp-page="./Login" asp-route-returnUrl="@Model.ReturnUrl">Log in</a>
+        </p>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            try {
+                const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                const select = document.getElementById('Input_TimeZoneId');
+                if (tz && select && [...select.options].some(o => o.value === tz)) select.value = tz;
+            } catch (e) { /* ignore */ }
+        })();
+    </script>
+}

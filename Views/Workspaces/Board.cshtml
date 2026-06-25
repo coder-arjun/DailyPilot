@@ -1,0 +1,57 @@
+@model WorkspaceBoardViewModel
+@{
+    ViewData["Title"] = Model.Workspace.Name + " Board";
+    var prev = Model.Date.AddDays(-1);
+    var next = Model.Date.AddDays(1);
+    string PriorityBadge(Priority p) => p switch
+    {
+        Priority.High => "bg-danger",
+        Priority.Medium => "bg-warning text-dark",
+        _ => "bg-secondary"
+    };
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+    <h2 class="mb-0"><i class="bi bi-kanban"></i> @Model.Workspace.Name</h2>
+    <div class="btn-group">
+        <a class="btn btn-outline-secondary" asp-action="Board" asp-route-id="@Model.Workspace.Id" asp-route-date="@prev.ToString("yyyy-MM-dd")"><i class="bi bi-chevron-left"></i></a>
+        <a class="btn btn-outline-secondary" asp-action="Board" asp-route-id="@Model.Workspace.Id">@Model.Date.ToString("ddd dd MMM")</a>
+        <a class="btn btn-outline-secondary" asp-action="Board" asp-route-id="@Model.Workspace.Id" asp-route-date="@next.ToString("yyyy-MM-dd")"><i class="bi bi-chevron-right"></i></a>
+    </div>
+</div>
+
+<div class="row g-3 flex-nowrap overflow-auto pb-2">
+    @foreach (var col in Model.Columns)
+    {
+        <div class="col" style="min-width:280px; max-width:320px;">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-person-circle"></i> @col.MemberName</span>
+                    <span class="badge bg-secondary">@col.Completed/@col.Tasks.Count</span>
+                </div>
+                <div class="card-body p-2">
+                    @if (!col.Tasks.Any())
+                    {
+                        <p class="text-muted small text-center my-3">No tasks</p>
+                    }
+                    else
+                    {
+                        foreach (var t in col.Tasks)
+                        {
+                            <div class="border rounded p-2 mb-2 @(t.Status == DailyTaskStatus.Completed ? "bg-body-secondary" : "")">
+                                <div class="@(t.Status == DailyTaskStatus.Completed ? "text-decoration-line-through text-muted" : "")">@t.Title</div>
+                                <div class="small text-muted d-flex flex-wrap gap-1 mt-1">
+                                    <span class="badge @PriorityBadge(t.Priority)">@t.Priority</span>
+                                    @if (t.Category is not null) { <span class="badge" style="background-color:@t.Category.Color">@t.Category.Name</span> }
+                                    @if (t.DueTime is not null) { <span><i class="bi bi-clock"></i> @t.DueTime.Value.ToString("HH:mm")</span> }
+                                    @if (t.CarryForwardCount > 0) { <span class="text-warning"><i class="bi bi-arrow-right-circle"></i> ×@t.CarryForwardCount</span> }
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>
+<p class="text-muted small mt-2">Showing all members' tasks for @Model.Date.ToString("dddd, dd MMM yyyy").</p>

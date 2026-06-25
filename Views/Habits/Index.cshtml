@@ -1,0 +1,117 @@
+@model HabitsPageViewModel
+@using DailyPilot.Models
+@{ ViewData["Title"] = "Habits"; }
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0"><i class="bi bi-trophy"></i> Habits</h2>
+    <button class="btn btn-primary" data-bs-toggle="collapse" data-bs-target="#newHabit"><i class="bi bi-plus-lg"></i> New habit</button>
+</div>
+
+<div class="collapse mb-3" id="newHabit">
+    <div class="card"><div class="card-body">
+        <form asp-action="Create" method="post" class="row g-2 align-items-end">
+            @Html.AntiForgeryToken()
+            <div class="col-md-4">
+                <label class="form-label">Name</label>
+                <input name="name" class="form-control" required maxlength="100" placeholder="e.g. Read 20 minutes" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Description</label>
+                <input name="description" class="form-control" maxlength="500" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Frequency</label>
+                <select name="frequency" class="form-select" id="freqSelect">
+                    <option value="@HabitFrequency.Daily">Daily</option>
+                    <option value="@HabitFrequency.Weekly">Weekly</option>
+                </select>
+            </div>
+            <div class="col-md-1">
+                <label class="form-label">×/week</label>
+                <input name="targetPerWeek" type="number" min="1" max="7" value="3" class="form-control" />
+            </div>
+            <div class="col-md-1">
+                <label class="form-label">Colour</label>
+                <input name="color" type="color" value="#198754" class="form-control form-control-color" />
+            </div>
+            <div class="col-md-1">
+                <button type="submit" class="btn btn-primary w-100">Add</button>
+            </div>
+        </form>
+    </div></div>
+</div>
+
+@if (!Model.Habits.Any())
+{
+    <div class="text-center text-muted py-5">
+        <i class="bi bi-trophy" style="font-size:3rem;"></i>
+        <p class="mt-2">No habits yet. Create one to start building streaks!</p>
+    </div>
+}
+else
+{
+    <div class="row g-3">
+        @foreach (var h in Model.Habits)
+        {
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 @(h.TargetMet ? "border-success" : "")">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h5 class="card-title mb-1">
+                                    <span class="badge" style="background-color:@h.Habit.Color">&nbsp;</span>
+                                    @h.Habit.Name
+                                </h5>
+                                @if (!string.IsNullOrWhiteSpace(h.Habit.Description))
+                                {
+                                    <p class="text-muted small mb-2">@h.Habit.Description</p>
+                                }
+                            </div>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-link text-muted" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical"></i></button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li>
+                                        <form asp-action="Archive" method="post" class="m-0">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@h.Habit.Id" />
+                                            <button class="dropdown-item" type="submit">Archive</button>
+                                        </form>
+                                    </li>
+                                    <li>
+                                        <form asp-action="Delete" method="post" class="m-0" onsubmit="return confirm('Delete this habit and its history?');">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@h.Habit.Id" />
+                                            <button class="dropdown-item text-danger" type="submit">Delete</button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="d-flex align-items-center gap-3 my-2">
+                            <div class="fs-4">🔥 <span class="fw-bold">@h.CurrentStreak</span> <small class="text-muted">@h.StreakUnit@(h.CurrentStreak == 1 ? "" : "s")</small></div>
+                            <div class="text-muted small">Best: @h.LongestStreak</div>
+                        </div>
+
+                        @if (h.Habit.Frequency == HabitFrequency.Weekly)
+                        {
+                            <div class="small text-muted mb-1">This week: @h.ThisWeekCount / @h.Habit.TargetPerWeek</div>
+                            <div class="progress mb-2" style="height:6px;">
+                                <div class="progress-bar bg-success" style="width:@h.WeekProgress%"></div>
+                            </div>
+                        }
+
+                        <form asp-action="Toggle" method="post" class="m-0">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@h.Habit.Id" />
+                            <button type="submit" class="btn w-100 @(h.DoneToday ? "btn-success" : "btn-outline-success")">
+                                <i class="bi @(h.DoneToday ? "bi-check-circle-fill" : "bi-circle")"></i>
+                                @(h.DoneToday ? "Done today" : "Mark done today")
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}

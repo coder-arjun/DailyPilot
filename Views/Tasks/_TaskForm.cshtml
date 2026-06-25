@@ -1,0 +1,91 @@
+@model TaskFormViewModel
+
+<div asp-validation-summary="ModelOnly" class="text-danger"></div>
+<input type="hidden" asp-for="Id" />
+<input type="hidden" asp-for="WorkspaceId" />
+
+@if (Model.WorkspaceId is not null && Model.Members.Any())
+{
+    <div class="alert alert-primary py-2 small mb-3">
+        <i class="bi bi-people"></i> Team task in <strong>@Model.WorkspaceName</strong>
+    </div>
+    <div class="mb-3">
+        <label asp-for="AssigneeId" class="form-label"></label>
+        <select asp-for="AssigneeId" class="form-select">
+            @foreach (var m in Model.Members)
+            {
+                var label = (m.User?.DisplayName ?? m.User?.UserName ?? m.User?.Email) + " (" + m.Role + ")";
+                <option value="@m.UserId" selected="@(Model.AssigneeId == m.UserId)">@label</option>
+            }
+        </select>
+    </div>
+}
+
+<div class="mb-3">
+    <label asp-for="Title" class="form-label"></label>
+    <input asp-for="Title" class="form-control" autofocus placeholder="What do you need to do?" />
+    <span asp-validation-for="Title" class="text-danger"></span>
+</div>
+
+<div class="row">
+    <div class="col-md-4 mb-3">
+        <label asp-for="PlannedDate" class="form-label"></label>
+        <input asp-for="PlannedDate" type="date" class="form-control" />
+        <span asp-validation-for="PlannedDate" class="text-danger"></span>
+    </div>
+    <div class="col-md-4 mb-3">
+        <label asp-for="DueTime" class="form-label"></label>
+        <input asp-for="DueTime" type="time" class="form-control" />
+    </div>
+    <div class="col-md-4 mb-3">
+        <label asp-for="ReminderTime" class="form-label"></label>
+        <input asp-for="ReminderTime" type="time" class="form-control" />
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-3 mb-3">
+        <label asp-for="Priority" class="form-label"></label>
+        <select asp-for="Priority" asp-items="Html.GetEnumSelectList<Priority>()" class="form-select"></select>
+    </div>
+    <div class="col-md-3 mb-3">
+        <label asp-for="EnergyLevel" class="form-label"></label>
+        <select asp-for="EnergyLevel" asp-items="Html.GetEnumSelectList<EnergyLevel>()" class="form-select"></select>
+    </div>
+    <div class="col-md-3 mb-3">
+        <label asp-for="EstimatedMinutes" class="form-label"></label>
+        <input asp-for="EstimatedMinutes" type="number" min="0" max="1440" class="form-control" />
+    </div>
+    <div class="col-md-3 mb-3">
+        <label asp-for="Recurrence" class="form-label"></label>
+        <select asp-for="Recurrence" asp-items="Html.GetEnumSelectList<RecurrencePattern>()" class="form-select"></select>
+    </div>
+</div>
+
+<div class="mb-3">
+    <label asp-for="CategoryId" class="form-label"></label>
+    <select asp-for="CategoryId" class="form-select">
+        <option value="">— None —</option>
+        @foreach (var c in Model.Categories)
+        {
+            <option value="@c.Id" selected="@(Model.CategoryId == c.Id)">@c.Name</option>
+        }
+    </select>
+</div>
+
+<div class="mb-3">
+    <label asp-for="TagsCsv" class="form-label"></label>
+    <input asp-for="TagsCsv" class="form-control" list="tagSuggestions" placeholder="Comma-separated, e.g. focus, client-x, follow-up" />
+    <datalist id="tagSuggestions">
+        @foreach (var t in Model.AllTags)
+        {
+            <option value="@t"></option>
+        }
+    </datalist>
+    <div class="form-text">Separate multiple tags with commas.</div>
+</div>
+
+<div class="mb-3">
+    <label asp-for="Notes" class="form-label"></label>
+    <textarea asp-for="Notes" class="form-control" rows="3"></textarea>
+</div>

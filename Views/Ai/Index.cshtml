@@ -1,0 +1,165 @@
+@model AssistantViewModel
+@using DailyPilot.Services.Ai
+@{
+    ViewData["Title"] = "AI Assistant";
+    string KindBadge(ScheduleBlockKind k) => k switch
+    {
+        ScheduleBlockKind.Break => "bg-secondary",
+        ScheduleBlockKind.Focus => "bg-info text-dark",
+        _ => "bg-primary"
+    };
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0"><i class="bi bi-stars"></i> AI Assistant</h2>
+    <span class="badge @(Model.LlmEnabled ? "bg-success" : "bg-secondary")">
+        @(Model.LlmEnabled ? "LLM-powered" : "Smart rules")
+    </span>
+</div>
+<p class="text-muted">For @Model.Date.ToString("dddd, dd MMM yyyy")</p>
+
+<!-- AI Coach -->
+<div class="card mb-3 border-primary">
+    <div class="card-body">
+        <h5 class="card-title"><i class="bi bi-robot text-primary"></i> Your Coach</h5>
+        @if (!string.IsNullOrWhiteSpace(Model.Coach.Greeting))
+        {
+            <p class="mb-1">@Model.Coach.Greeting</p>
+        }
+        @if (!string.IsNullOrWhiteSpace(Model.Coach.Focus))
+        {
+            <p class="mb-1"><i class="bi bi-bullseye text-danger"></i> <strong>Focus:</strong> @Model.Coach.Focus</p>
+        }
+        @if (!string.IsNullOrWhiteSpace(Model.Coach.Motivation))
+        {
+            <p class="mb-2 fst-italic text-success">@Model.Coach.Motivation</p>
+        }
+        <div class="row">
+            @if (Model.Coach.Tips.Any())
+            {
+                <div class="col-md-6">
+                    <h6 class="small text-uppercase text-muted">Tips</h6>
+                    <ul class="mb-2">@foreach (var t in Model.Coach.Tips) { <li>@t</li> }</ul>
+                </div>
+            }
+            @if (Model.Coach.HabitNudges.Any())
+            {
+                <div class="col-md-6">
+                    <h6 class="small text-uppercase text-muted">Habit nudges</h6>
+                    <ul class="mb-2">@foreach (var n in Model.Coach.HabitNudges) { <li>@n</li> }</ul>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <!-- Insights -->
+    <div class="col-lg-6">
+        <div class="card h-100"><div class="card-body">
+            <h5 class="card-title"><i class="bi bi-lightbulb"></i> Productivity Insights</h5>
+            <p class="fw-medium">@Model.Insights.Headline</p>
+            <ul class="mb-3">
+                @foreach (var i in Model.Insights.Insights) { <li>@i</li> }
+            </ul>
+            @if (Model.Insights.Suggestions.Any())
+            {
+                <h6>Suggestions</h6>
+                <ul class="mb-0">
+                    @foreach (var s in Model.Insights.Suggestions) { <li>@s</li> }
+                </ul>
+            }
+        </div></div>
+    </div>
+
+    <!-- Prioritization -->
+    <div class="col-lg-6">
+        <div class="card h-100"><div class="card-body">
+            <h5 class="card-title"><i class="bi bi-sort-down"></i> Prioritized for Today</h5>
+            <p class="text-muted small">@Model.Prioritization.Summary</p>
+            @if (Model.Prioritization.Tasks.Any())
+            {
+                <ol class="list-group list-group-numbered">
+                    @foreach (var t in Model.Prioritization.Tasks)
+                    {
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                                <div class="fw-medium">@t.Title</div>
+                                <small class="text-muted">@t.Reason</small>
+                            </div>
+                            <span class="badge bg-light text-dark border">@t.SuggestedPriority</span>
+                        </li>
+                    }
+                </ol>
+            }
+            else { <p class="text-muted mb-0">No pending tasks to prioritize.</p> }
+        </div></div>
+    </div>
+
+    <!-- Schedule -->
+    <div class="col-lg-6">
+        <div class="card h-100"><div class="card-body">
+            <h5 class="card-title"><i class="bi bi-calendar2-week"></i> Suggested Schedule</h5>
+            <form method="get" class="row g-2 align-items-end mb-3">
+                <div class="col-auto">
+                    <label class="form-label small mb-0">Start</label>
+                    <input type="time" name="workStart" value="@Model.WorkStart.ToString("HH:mm")" class="form-control form-control-sm" />
+                </div>
+                <div class="col-auto">
+                    <label class="form-label small mb-0">End</label>
+                    <input type="time" name="workEnd" value="@Model.WorkEnd.ToString("HH:mm")" class="form-control form-control-sm" />
+                </div>
+                <div class="col-auto">
+                    <button class="btn btn-sm btn-outline-primary">Regenerate</button>
+                </div>
+            </form>
+            <p class="text-muted small">@Model.Schedule.Summary</p>
+            @if (Model.Schedule.Blocks.Any())
+            {
+                <ul class="list-group">
+                    @foreach (var b in Model.Schedule.Blocks)
+                    {
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><span class="badge @KindBadge(b.Kind) me-2">@b.Start.ToString("HH:mm")–@b.End.ToString("HH:mm")</span> @b.Title</span>
+                        </li>
+                    }
+                </ul>
+            }
+        </div></div>
+    </div>
+
+    <!-- Recommendations -->
+    <div class="col-lg-6">
+        <div class="card h-100"><div class="card-body">
+            <h5 class="card-title"><i class="bi bi-magic"></i> Recommendations</h5>
+            @if (Model.Recommendations.Recommendations.Any())
+            {
+                <div class="list-group">
+                    @foreach (var rec in Model.Recommendations.Recommendations)
+                    {
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between">
+                                <span class="fw-medium">@rec.Title</span>
+                                <form asp-controller="Ai" asp-action="QuickAdd" method="post" class="m-0">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="text" value="@rec.Title @(rec.CategoryName is not null ? "#" + rec.CategoryName : "")" />
+                                    <button class="btn btn-sm btn-outline-success" title="Add this task"><i class="bi bi-plus-lg"></i></button>
+                                </form>
+                            </div>
+                            <small class="text-muted">@rec.Reason</small>
+                        </div>
+                    }
+                </div>
+            }
+            else { <p class="text-muted mb-0">No recommendations yet — keep using DayPilot and they'll appear here.</p> }
+        </div></div>
+    </div>
+</div>
+
+@if (!Model.LlmEnabled)
+{
+    <div class="alert alert-info mt-3 small mb-0">
+        <i class="bi bi-info-circle"></i> These results come from DayPilot's built-in smart-rules engine.
+        Configure Azure OpenAI or OpenAI in <code>appsettings.json</code> (the <code>Ai</code> section) to enable full LLM-powered assistance.
+    </div>
+}
