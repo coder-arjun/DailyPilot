@@ -40,6 +40,12 @@ public class RegisterModel : PageModel
         public string DisplayName { get; set; } = string.Empty;
 
         [Required]
+        [Display(Name = "Username")]
+        [StringLength(50, MinimumLength = 3)]
+        [RegularExpression(@"^[a-zA-Z0-9._@+\-]+$", ErrorMessage = "Username can use letters, numbers and . _ - @ + only (no spaces).")]
+        public string UserName { get; set; } = string.Empty;
+
+        [Required]
         [EmailAddress]
         [Display(Name = "Email")]
         public string Email { get; set; } = string.Empty;
@@ -75,7 +81,7 @@ public class RegisterModel : PageModel
 
         var user = new ApplicationUser
         {
-            UserName = Input.Email,
+            UserName = Input.UserName,
             Email = Input.Email,
             DisplayName = Input.DisplayName,
             TimeZoneId = Input.TimeZoneId,

@@ -16,6 +16,13 @@
                 root.setAttribute('data-bs-theme', bs);
                 setCookie('dp_palette', key);
 
+                // Theme-aware tab icon + browser UI colour.
+                const fav = document.getElementById('dp-favicon');
+                if (fav) fav.href = '/icons/favicon-' + key + '.png';
+                const themeColors = { obsidian: '#0B0C10', nordic: '#FBFBFD', emerald: '#060F0E', ultraviolet: '#03001C', titanium: '#121214' };
+                const meta = document.getElementById('dp-theme-color');
+                if (meta && themeColors[key]) meta.setAttribute('content', themeColors[key]);
+
                 // Persist to the user's profile (cross-device) when signed in.
                 const token = document.querySelector('input[name="__RequestVerificationToken"]');
                 if (token) {

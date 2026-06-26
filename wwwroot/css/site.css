@@ -96,10 +96,10 @@ h1, h2, h3, h4, h5, .navbar-brand {
 a { text-decoration: none; }
 
 /* ---------- Navbar ---------- */
+/* NOTE: no backdrop-filter/transform here — those create a containing block for
+   position:fixed descendants, which would break the off-canvas drawer nested inside. */
 .dp-navbar {
-    background: var(--dp-navbar-bg);
-    -webkit-backdrop-filter: saturate(180%) blur(14px);
-    backdrop-filter: saturate(180%) blur(14px);
+    background: var(--dp-surface);
     border-bottom: 1px solid var(--bs-border-color);
     box-shadow: 0 2px 18px rgba(16, 24, 40, .05);
 }
@@ -159,6 +159,119 @@ a { text-decoration: none; }
 .dp-icon-btn:hover {
     color: var(--dp-primary);
     border-color: var(--dp-primary);
+}
+
+/* ---------- Mobile off-canvas drawer (Finoma-style) ---------- */
+.mobile-drawer {
+    --bs-offcanvas-width: min(86vw, 360px);
+    --bs-offcanvas-bg: var(--dp-surface);
+    --bs-offcanvas-border-color: var(--bs-border-color);
+    --bs-offcanvas-box-shadow: var(--dp-shadow-lg);
+    --bs-offcanvas-padding-x: 0;
+    --bs-offcanvas-padding-y: 0;
+    color: var(--bs-body-color);
+}
+
+.offcanvas-backdrop.show {
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+}
+
+/* Drawer chrome only renders below the lg expand breakpoint; desktop bar is untouched. */
+@media (max-width: 991.98px) {
+    /* Pin full height so the body fills real space instead of collapsing to a sliver. */
+    .mobile-drawer.offcanvas { height: 100vh; height: 100dvh; }
+
+    .mobile-drawer .offcanvas-header {
+        padding: 1.1rem 1.25rem .9rem;
+        border-bottom: 1px solid var(--bs-border-color);
+        background: var(--dp-surface-2);
+    }
+
+    .mobile-drawer-brand {
+        display: inline-flex; align-items: center; gap: .6rem;
+        font-family: var(--dp-font-display); font-weight: 700; font-size: 1.2rem;
+        letter-spacing: -.01em; color: var(--bs-body-color);
+    }
+
+    .mobile-drawer-seal {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 2.1rem; height: 2.1rem; border-radius: 50%;
+        border: 1.5px solid var(--dp-primary); color: var(--dp-primary);
+        font-size: 1rem;
+    }
+
+    .mobile-drawer-close {
+        margin-left: auto; width: 2.25rem; height: 2.25rem;
+        display: inline-flex; align-items: center; justify-content: center;
+        background: transparent; border: 1px solid var(--bs-border-color); border-radius: 10px;
+        color: var(--dp-muted); font-size: 1rem; cursor: pointer;
+        transition: all .15s ease;
+    }
+    .mobile-drawer-close:hover { color: var(--dp-primary); border-color: var(--dp-primary); }
+
+    .mobile-drawer .offcanvas-body {
+        display: flex; flex-direction: column;
+        padding: 1rem 1rem 1.25rem; gap: .12rem;
+        overflow-y: auto;
+    }
+
+    .mobile-drawer-label {
+        text-transform: uppercase; font-size: .68rem; font-weight: 700; letter-spacing: .13em;
+        color: var(--dp-muted); padding: 0 .35rem; margin: .55rem 0 .4rem;
+    }
+
+    .mobile-drawer-search { margin-bottom: .85rem; }
+    .mobile-drawer-search .input-group-text {
+        background: var(--dp-surface-2); border: 1px solid var(--bs-border-color); border-right: 0;
+        color: var(--dp-muted); border-radius: 12px 0 0 12px;
+    }
+    .mobile-drawer-search .form-control {
+        border: 1px solid var(--bs-border-color); border-left: 0; background: var(--dp-surface-2);
+        color: var(--bs-body-color); border-radius: 0 12px 12px 0; padding: .6rem .75rem;
+    }
+
+    /* Nav rows: full-width, icon chip, generous touch target */
+    .mobile-drawer .navbar-nav { width: 100%; gap: .1rem; }
+    .mobile-drawer .navbar-nav .nav-item { width: 100%; }
+    .mobile-drawer .navbar-nav .nav-link {
+        display: flex; align-items: center; gap: .85rem; width: 100%;
+        padding: .72rem .7rem !important; margin: 0; border-radius: 12px;
+        font-size: .98rem; font-weight: 500; color: var(--bs-body-color) !important;
+    }
+    .mobile-drawer .navbar-nav .nav-link > .bi:first-child {
+        flex-shrink: 0; width: 2.1rem; height: 2.1rem; margin: 0 !important;
+        display: inline-flex; align-items: center; justify-content: center;
+        background: var(--dp-surface-2); border: 1px solid var(--bs-border-color); border-radius: 10px;
+        color: var(--dp-muted); font-size: 1rem;
+        transition: all .15s ease;
+    }
+    .mobile-drawer .navbar-nav .nav-link:hover { background: rgba(var(--dp-primary-rgb), .12); }
+    .mobile-drawer .navbar-nav .nav-link:hover > .bi:first-child { color: var(--dp-primary); border-color: var(--dp-primary); }
+    .mobile-drawer .nav-link.active { background: rgba(var(--dp-primary-rgb), .14); color: var(--bs-body-color) !important; font-weight: 600; }
+    .mobile-drawer .nav-link.active > .bi:first-child { background: var(--dp-primary); border-color: var(--dp-primary); color: var(--dp-on-primary); }
+
+    .mobile-drawer .dropdown-toggle { justify-content: flex-start; }
+    .mobile-drawer .dropdown-toggle::after { margin-left: auto; }
+
+    /* Sub-menus expand flat & indented (no floating panel) */
+    .mobile-drawer .dropdown-menu {
+        position: static !important; float: none; inset: auto !important; transform: none !important;
+        border: 0; box-shadow: none; background: transparent;
+        padding: .1rem 0 .3rem 2.95rem; margin: 0; width: 100%;
+    }
+    .mobile-drawer .dropdown-menu .dropdown-item {
+        display: flex; align-items: center; gap: .6rem;
+        padding: .55rem .6rem; border-radius: 9px; color: var(--bs-body-color); font-size: .92rem;
+    }
+    .mobile-drawer .dropdown-header { padding-left: 0; }
+
+    /* Utility footer: search / workspace / theme / account stack as rows */
+    .mobile-drawer .nav-utility {
+        flex-direction: column; align-items: stretch; width: 100%; gap: .1rem; margin-top: .3rem;
+    }
+    .mobile-drawer .nav-utility > * { width: 100%; }
+    .mobile-drawer .nav-utility .navbar-nav { width: 100%; }
 }
 
 /* ---------- Cards / surfaces ---------- */
@@ -393,6 +506,19 @@ a { text-decoration: none; }
     font-size: .72rem; font-weight: 600;
     border-radius: 7px; padding: .22em .5em;
     display: inline-flex; align-items: center; gap: .25rem;
+}
+
+/* ---------- Responsive tweaks ---------- */
+@media (max-width: 991.98px) {
+    .dp-search { max-width: none; }                 /* full-width search inside collapsed navbar */
+    .dp-navbar .navbar-nav .dropdown-menu { box-shadow: none; }
+    .dp-hero { padding-top: 2.5rem; }
+}
+
+@media (max-width: 575.98px) {
+    .container, .container-fluid { padding-left: 1rem; padding-right: 1rem; }
+    .dp-auth-card { padding: 1.5rem; }
+    h2 { font-size: 1.5rem; }
 }
 
 /* ---------- Search ---------- */

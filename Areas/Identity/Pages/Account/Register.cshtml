@@ -22,8 +22,15 @@
             </div>
 
             <div class="mb-3">
+                <label asp-for="Input.UserName" class="form-label"></label>
+                <input asp-for="Input.UserName" class="form-control" placeholder="e.g. aryan" autocomplete="username" />
+                <div class="form-text">You'll use this (or your email) to log in.</div>
+                <span asp-validation-for="Input.UserName" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-3">
                 <label asp-for="Input.Email" class="form-label"></label>
-                <input asp-for="Input.Email" class="form-control" placeholder="name@example.com" autocomplete="username" />
+                <input asp-for="Input.Email" class="form-control" placeholder="name@example.com" autocomplete="email" />
                 <span asp-validation-for="Input.Email" class="text-danger small"></span>
             </div>
 

@@ -12,11 +12,13 @@ namespace DailyPilot.Areas.Identity.Pages.Account;
 public class LoginModel : PageModel
 {
     private readonly SignInManager<ApplicationUser> _signInManager;
+    private readonly UserManager<ApplicationUser> _userManager;
     private readonly ILogger<LoginModel> _logger;
 
-    public LoginModel(SignInManager<ApplicationUser> signInManager, ILogger<LoginModel> logger)
+    public LoginModel(SignInManager<ApplicationUser> signInManager, UserManager<ApplicationUser> userManager, ILogger<LoginModel> logger)
     {
         _signInManager = signInManager;
+        _userManager = userManager;
         _logger = logger;
     }
 
@@ -31,8 +33,8 @@ public class LoginModel : PageModel
     public class InputModel
     {
         [Required]
-        [EmailAddress]
-        public string Email { get; set; } = string.Empty;
+        [Display(Name = "Email or username")]
+        public string Login { get; set; } = string.Empty;
 
         [Required]
         [DataType(DataType.Password)]
@@ -59,8 +61,17 @@ public class LoginModel : PageModel
         if (!ModelState.IsValid)
             return Page();
 
+        // Resolve the account by username first, then by email — so users can log in with either.
+        var user = await _userManager.FindByNameAsync(Input.Login)
+                   ?? await _userManager.FindByEmailAsync(Input.Login);
+        if (user is null)
+        {
+            ModelState.AddModelError(string.Empty, "Invalid login attempt.");
+            return Page();
+        }
+
         var result = await _signInManager.PasswordSignInAsync(
-            Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: true);
+            user.UserName!, Input.Password, Input.RememberMe, lockoutOnFailure: true);
 
         if (result.Succeeded)
         {
