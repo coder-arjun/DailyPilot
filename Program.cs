@@ -120,13 +120,33 @@ builder.Services.AddRazorPages(); // Identity UI
 
 var app = builder.Build();
 
+// Drops every foreign key then every base table (uses INFORMATION_SCHEMA so it
+// respects the login's permissions on restricted shared hosting).
+const string DropAllObjectsSql = @"
+DECLARE @sql NVARCHAR(MAX) = N'';
+SELECT @sql += N'ALTER TABLE [' + TABLE_SCHEMA + N'].[' + TABLE_NAME + N'] DROP CONSTRAINT [' + CONSTRAINT_NAME + N'];'
+FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE CONSTRAINT_TYPE = 'FOREIGN KEY';
+SELECT @sql += N'DROP TABLE [' + TABLE_SCHEMA + N'].[' + TABLE_NAME + N'];'
+FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE';
+IF @sql <> N'' EXEC sp_executesql @sql;";
+
 // --- Apply migrations + seed roles on startup ---
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
+    // One-time recovery switch: when Database:ResetOnStartup is true, drop everything
+    // and migrate fresh. Used to clear a half-initialised DB from a crashed first deploy.
+    // Turn it back off afterwards so normal restarts never wipe data.
+    if (app.Configuration.GetValue<bool>("Database:ResetOnStartup"))
+    {
+        logger.LogWarning("Database:ResetOnStartup=true — dropping all tables before migrating.");
+        db.Database.ExecuteSqlRaw(DropAllObjectsSql);
+    }
+
     db.Database.Migrate();
 
-    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
     await RoleSeeder.SeedAsync(scope.ServiceProvider, app.Configuration, logger);
 }
 
@@ -138,17 +158,19 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseSecurityHeaders();
+
+// Serve raw files from wwwroot (not the fingerprinted static-asset manifest) so that
+// file-by-file FTP deploys of CSS/JS/icons take effect immediately.
+app.UseStaticFiles();
+
 app.UseRouting();
 
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapStaticAssets();
-
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}")
-    .WithStaticAssets();
+    pattern: "{controller=Home}/{action=Index}/{id?}");
 app.MapRazorPages();
 
 // Hangfire dashboard — restricted to authenticated Admin users.

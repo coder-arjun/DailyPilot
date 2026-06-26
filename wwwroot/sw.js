@@ -1,5 +1,5 @@
 // DayPilot service worker — app-shell caching + offline fallback (PRD Phase 3 / PWA).
-const CACHE = 'daypilot-v6';
+const CACHE = 'daypilot-v8';
 const APP_SHELL = [
     '/offline.html',
     '/manifest.webmanifest',

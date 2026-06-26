@@ -363,3 +363,9 @@ MigrationBackup/
 FodyWeavers.xsd
 # Local dev overrides (base appsettings.json stays tracked; secrets live in user-secrets)
 appsettings.Development.json
+# Production secrets — created on the server, never committed
+appsettings.Production.json
+# Local publish output
+publish/
+# Uploaded task attachments (runtime user data)
+Storage/
