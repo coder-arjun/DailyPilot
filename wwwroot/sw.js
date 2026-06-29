@@ -1,5 +1,5 @@
 // DayPilot service worker — app-shell caching + offline fallback (PRD Phase 3 / PWA).
-const CACHE = 'daypilot-v10';
+const CACHE = 'daypilot-v11';
 const APP_SHELL = [
     '/offline.html',
     '/manifest.webmanifest',
@@ -37,7 +37,7 @@ self.addEventListener('push', event => {
     const options = {
         body: data.body || '',
         icon: '/icons/icon-192.png',
-        badge: '/icons/icon-192.png',
+        badge: '/icons/badge.png',
         tag: data.tag,
         renotify: !!data.tag,
         requireInteraction: true,

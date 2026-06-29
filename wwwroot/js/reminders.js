@@ -27,7 +27,7 @@
             await reg.showNotification('⏰ ' + r.title, {
                 body: 'Reminder · ' + r.time,
                 icon: '/icons/icon-192.png',
-                badge: '/icons/icon-192.png',
+                badge: '/icons/badge.png',
                 tag: 'dp-task-' + r.taskId,
                 renotify: true,
                 requireInteraction: true,

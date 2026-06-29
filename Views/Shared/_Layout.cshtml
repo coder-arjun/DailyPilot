@@ -226,6 +226,17 @@
     </header>
 
     <div class="container py-2 dp-main">
+        @if (signedIn && !string.IsNullOrWhiteSpace(vapidKey))
+        {
+            <div id="dpNotifyBar" class="alert alert-primary d-none align-items-center justify-content-between flex-wrap gap-2" role="alert">
+                <span><i class="bi bi-bell"></i> Turn on notifications to get task reminders on this device.</span>
+                <span class="d-flex gap-2">
+                    <button class="btn btn-sm btn-primary" type="button" data-push-enable>Enable</button>
+                    <button class="btn btn-sm btn-outline-secondary" type="button" data-push-test>Send test</button>
+                    <button class="btn btn-sm btn-link text-muted" type="button" data-push-dismiss>Later</button>
+                </span>
+            </div>
+        }
         <main role="main" class="pb-3">
             @RenderBody()
         </main>
