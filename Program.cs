@@ -135,14 +135,21 @@ builder.Services.AddRazorPages(); // Identity UI
 
 var app = builder.Build();
 
-// Drops every foreign key then every base table (uses INFORMATION_SCHEMA so it
-// respects the login's permissions on restricted shared hosting).
+// Drops every foreign key then every base table, but ONLY in DailyPilot's own
+// schemas (dbo + HangFire).
+//
+// ⚠️ SHARED DATABASE — this prod DB (db56456 on MonsterASP) is shared with the
+// Finoma app, which lives entirely in the `finoma` schema. An earlier unscoped
+// version of this reset dropped EVERY table in the database and wiped Finoma's
+// data. The `TABLE_SCHEMA IN ('dbo','HangFire')` filter below is what keeps this
+// reset confined to DailyPilot. Never broaden it to all schemas, and keep
+// `Database:ResetOnStartup` = false in production except for a deliberate reset.
 const string DropAllObjectsSql = @"
 DECLARE @sql NVARCHAR(MAX) = N'';
 SELECT @sql += N'ALTER TABLE [' + TABLE_SCHEMA + N'].[' + TABLE_NAME + N'] DROP CONSTRAINT [' + CONSTRAINT_NAME + N'];'
-FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE CONSTRAINT_TYPE = 'FOREIGN KEY';
+FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE CONSTRAINT_TYPE = 'FOREIGN KEY' AND TABLE_SCHEMA IN ('dbo','HangFire');
 SELECT @sql += N'DROP TABLE [' + TABLE_SCHEMA + N'].[' + TABLE_NAME + N'];'
-FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE';
+FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_SCHEMA IN ('dbo','HangFire');
 IF @sql <> N'' EXEC sp_executesql @sql;";
 
 // --- Apply migrations + seed roles on startup ---

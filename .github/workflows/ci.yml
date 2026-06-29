@@ -1,0 +1,26 @@
+name: CI build
+
+# Build-only gate for pull requests — verifies the app compiles before it can
+# reach master (which auto-deploys). No deployment happens here.
+on:
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore DailyPilot.csproj
+
+      - name: Build (Release)
+        run: dotnet build DailyPilot.csproj --configuration Release --no-restore
