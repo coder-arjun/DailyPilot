@@ -103,6 +103,27 @@ public class AnalyticsService : IAnalyticsService
             });
         }
 
+        // Activity heatmap — completed tasks per day over ~26 weeks, aligned to Monday.
+        var hmStart = today.AddDays(-7 * 25);
+        hmStart = hmStart.AddDays(-(((int)hmStart.DayOfWeek + 6) % 7)); // back up to Monday
+        var completedByDay = await _db.Tasks
+            .Where(t => t.UserId == userId && t.PlannedDate >= hmStart && t.PlannedDate <= today
+                        && t.Status == DailyTaskStatus.Completed)
+            .GroupBy(t => t.PlannedDate)
+            .Select(g => new { Date = g.Key, Count = g.Count() })
+            .ToListAsync();
+        var hmMap = completedByDay.ToDictionary(x => x.Date, x => x.Count);
+        for (var d = hmStart; d <= today; d = d.AddDays(1))
+        {
+            var c = hmMap.TryGetValue(d, out var n) ? n : 0;
+            vm.Heatmap.Add(new HeatmapDay
+            {
+                Date = d,
+                Completed = c,
+                Level = c == 0 ? 0 : c <= 2 ? 1 : c <= 4 ? 2 : c <= 6 ? 3 : 4
+            });
+        }
+
         // Category performance.
         vm.CategoryPerformance = weekTasks
             .GroupBy(t => t.Category?.Name ?? "Uncategorised")

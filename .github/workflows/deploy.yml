@@ -1,0 +1,51 @@
+name: Build & Deploy to MonsterASP
+
+on:
+  push:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Publish
+        run: dotnet publish DailyPilot.csproj -c Release -o ./publish
+
+      # Take the app offline so IIS releases the lock on DailyPilot.dll before we overwrite it.
+      - name: Stop app (upload app_offline.htm)
+        run: |
+          printf '<html><body><h1>DayPilot is updating…</h1></body></html>' > app_offline.htm
+          curl -sS --ftp-create-dirs -T app_offline.htm \
+            "ftp://${{ secrets.FTP_SERVER }}/wwwroot/app_offline.htm" \
+            --user "${{ secrets.FTP_USERNAME }}:${{ secrets.FTP_PASSWORD }}"
+
+      - name: Deploy via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./publish/
+          server-dir: /wwwroot/
+          # Never touch server-only files: production secrets, runtime data, debug symbols.
+          exclude: |
+            **/appsettings.Production.json
+            **/app_offline.htm
+            **/*.pdb
+
+      # Bring the app back online (runs even if the deploy step fails).
+      - name: Start app (remove app_offline.htm)
+        if: always()
+        run: |
+          curl -sS "ftp://${{ secrets.FTP_SERVER }}/" \
+            --user "${{ secrets.FTP_USERNAME }}:${{ secrets.FTP_PASSWORD }}" \
+            -Q "DELE /wwwroot/app_offline.htm" || true

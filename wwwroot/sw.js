@@ -1,5 +1,5 @@
 // DayPilot service worker — app-shell caching + offline fallback (PRD Phase 3 / PWA).
-const CACHE = 'daypilot-v8';
+const CACHE = 'daypilot-v10';
 const APP_SHELL = [
     '/offline.html',
     '/manifest.webmanifest',
@@ -26,6 +26,35 @@ self.addEventListener('activate', event => {
         caches.keys()
             .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
             .then(() => self.clients.claim())
+    );
+});
+
+// ---- Web Push: show notification when one arrives (works with the app closed) ----
+self.addEventListener('push', event => {
+    let data = {};
+    try { data = event.data ? event.data.json() : {}; } catch (e) { data = { title: 'DayPilot', body: event.data ? event.data.text() : '' }; }
+    const title = data.title || 'DayPilot';
+    const options = {
+        body: data.body || '',
+        icon: '/icons/icon-192.png',
+        badge: '/icons/icon-192.png',
+        tag: data.tag,
+        renotify: !!data.tag,
+        requireInteraction: true,
+        data: { url: data.url || '/' },
+        vibrate: [300, 150, 300]
+    };
+    event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener('notificationclick', event => {
+    event.notification.close();
+    const url = (event.notification.data && event.notification.data.url) || '/';
+    event.waitUntil(
+        self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+            for (const c of list) { if ('focus' in c) { c.navigate(url); return c.focus(); } }
+            if (self.clients.openWindow) return self.clients.openWindow(url);
+        })
     );
 });
 

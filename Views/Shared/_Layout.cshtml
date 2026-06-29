@@ -4,6 +4,7 @@
 @inject UserManager<ApplicationUser> UserManager
 @inject DailyPilot.Services.IWorkspaceService WorkspaceService
 @inject DailyPilot.Services.IWorkspaceContext WorkspaceContext
+@inject Microsoft.Extensions.Configuration.IConfiguration Config
 @{
     var currentUser = SignInManager.IsSignedIn(User) ? await UserManager.GetUserAsync(User) : null;
     var signedIn = SignInManager.IsSignedIn(User);
@@ -42,6 +43,8 @@
 
     var ctrl = ViewContext.RouteData.Values["controller"]?.ToString();
     string Active(params string[] controllers) => controllers.Contains(ctrl) ? "active" : "";
+
+    var vapidKey = Config["Push:PublicKey"];
 }
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="@bsTheme" data-dp-theme="@palette">
@@ -262,6 +265,12 @@
     @if (signedIn)
     {
         <script src="~/js/notifications.js" asp-append-version="true"></script>
+        <script src="~/js/reminders.js" asp-append-version="true"></script>
+        if (!string.IsNullOrWhiteSpace(vapidKey))
+        {
+            <script>window.dpVapidKey = '@vapidKey';</script>
+            <script src="~/js/push.js" asp-append-version="true"></script>
+        }
     }
     @await RenderSectionAsync("Scripts", required: false)
     <script>

@@ -16,6 +16,17 @@ public class DashboardViewModel
 
     public List<DailyTrendPoint> Trend { get; set; } = new();
     public List<CategoryPerformance> CategoryPerformance { get; set; } = new();
+
+    /// <summary>Per-day completion data for the GitHub-style activity heatmap (oldest → newest, Monday-aligned).</summary>
+    public List<HeatmapDay> Heatmap { get; set; } = new();
+}
+
+public class HeatmapDay
+{
+    public DateOnly Date { get; set; }
+    public int Completed { get; set; }
+    /// <summary>Intensity bucket 0-4 used to colour the cell.</summary>
+    public int Level { get; set; }
 }
 
 public class DailyTrendPoint

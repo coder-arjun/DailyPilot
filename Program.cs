@@ -7,6 +7,7 @@ using Hangfire;
 using Hangfire.Dashboard;
 using Hangfire.SqlServer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,6 +15,15 @@ var builder = WebApplication.CreateBuilder(args);
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+
+// --- Persist Data Protection keys (FIXES frequent logouts) ---
+// Without this, every app restart/recycle (frequent on free hosting) regenerates the
+// key ring, which invalidates all existing auth cookies and signs everyone out.
+var keysDir = Path.Combine(builder.Environment.ContentRootPath, "Storage", "dpkeys");
+Directory.CreateDirectory(keysDir);
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(keysDir))
+    .SetApplicationName("DayPilot");
 
 // --- EF Core (PRD §12: SQL Server + EF Core) ---
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -80,6 +90,11 @@ builder.Services.AddScoped<Microsoft.AspNetCore.Identity.UI.Services.IEmailSende
 // --- Daily backups (PRD §9) ---
 builder.Services.Configure<BackupOptions>(builder.Configuration.GetSection("Backup"));
 builder.Services.AddScoped<IBackupService, SqlBackupService>();
+
+// --- Web Push + reminder dispatch (PRD §11 closed-app reminders) ---
+builder.Services.Configure<PushOptions>(builder.Configuration.GetSection("Push"));
+builder.Services.AddScoped<IPushNotificationService, PushNotificationService>();
+builder.Services.AddScoped<IReminderDispatchService, ReminderDispatchService>();
 
 // --- Phase 2 AI (PRD §6, §12: Azure OpenAI + Semantic Kernel) ---
 builder.Services.Configure<AiOptions>(builder.Configuration.GetSection("Ai"));
@@ -199,5 +214,15 @@ RecurringJob.AddOrUpdate<BackgroundJobs>(
     "daily-backup",
     job => job.BackupDatabaseAsync(),
     "0 1 * * *"); // 01:00 daily
+
+RecurringJob.AddOrUpdate<BackgroundJobs>(
+    "reminder-dispatch",
+    job => job.DispatchRemindersAsync(),
+    "* * * * *"); // every minute — closed-app reminder delivery
+
+RecurringJob.AddOrUpdate<BackgroundJobs>(
+    "weekly-review",
+    job => job.WeeklyReviewAsync(),
+    "0 8 * * 1"); // Monday 08:00
 
 app.Run();

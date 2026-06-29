@@ -23,6 +23,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<Workspace> Workspaces => Set<Workspace>();
     public DbSet<WorkspaceMember> WorkspaceMembers => Set<WorkspaceMember>();
     public DbSet<WorkspaceInvitation> WorkspaceInvitations => Set<WorkspaceInvitation>();
+    public DbSet<PushSubscription> PushSubscriptions => Set<PushSubscription>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -147,6 +148,13 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
                 .WithMany(w => w.Invitations)
                 .HasForeignKey(i => i.WorkspaceId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<PushSubscription>(e =>
+        {
+            e.HasIndex(p => p.UserId);
+            e.HasIndex(p => p.Endpoint).IsUnique();
+            e.Property(p => p.Endpoint).HasMaxLength(500);
         });
 
         builder.Entity<HabitEntry>(e =>

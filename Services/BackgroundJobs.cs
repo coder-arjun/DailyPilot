@@ -10,12 +10,15 @@ public class BackgroundJobs
     private readonly ICarryForwardService _carryForward;
     private readonly INotificationService _notifications;
     private readonly IBackupService _backup;
+    private readonly IReminderDispatchService _reminders;
 
-    public BackgroundJobs(ICarryForwardService carryForward, INotificationService notifications, IBackupService backup)
+    public BackgroundJobs(ICarryForwardService carryForward, INotificationService notifications,
+        IBackupService backup, IReminderDispatchService reminders)
     {
         _carryForward = carryForward;
         _notifications = notifications;
         _backup = backup;
+        _reminders = reminders;
     }
 
     /// <summary>FR-005: nightly carry-forward + recurring task materialisation.</summary>
@@ -29,4 +32,10 @@ public class BackgroundJobs
 
     /// <summary>PRD §9: daily database backup.</summary>
     public Task BackupDatabaseAsync() => _backup.BackupAsync();
+
+    /// <summary>§11: deliver due task reminders via email + web push (per minute).</summary>
+    public Task DispatchRemindersAsync() => _reminders.DispatchDueAsync();
+
+    /// <summary>Weekly productivity digest email.</summary>
+    public Task WeeklyReviewAsync() => _notifications.SendWeeklyReviewsAsync();
 }

@@ -26,6 +26,9 @@ public class TaskItem
     /// <summary>Optional reminder time of day.</summary>
     public TimeOnly? ReminderTime { get; set; }
 
+    /// <summary>The day the reminder for this task was last shown/acknowledged (dedupe so it fires once per day).</summary>
+    public DateOnly? ReminderFiredOn { get; set; }
+
     public Priority Priority { get; set; } = Priority.Medium;
     public EnergyLevel EnergyLevel { get; set; } = EnergyLevel.Any;
     public DailyTaskStatus Status { get; set; } = DailyTaskStatus.Pending;
