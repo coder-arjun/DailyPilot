@@ -95,7 +95,7 @@
 
         // ---- Server-side TempData toasts ----
         document.querySelectorAll('.dp-toast').forEach(function (el) {
-            try { new bootstrap.Toast(el, { delay: 4000 }).show(); } catch (e) { }
+            try { new bootstrap.Toast(el, { delay: 3000 }).show(); } catch (e) { }
         });
 
         // ---- Password visibility toggles ----

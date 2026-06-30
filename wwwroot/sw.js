@@ -1,5 +1,5 @@
 // DayPilot service worker — app-shell caching + offline fallback (PRD Phase 3 / PWA).
-const CACHE = 'daypilot-v12';
+const CACHE = 'daypilot-v13';
 const APP_SHELL = [
     '/offline.html',
     '/manifest.webmanifest',
@@ -41,7 +41,7 @@ self.addEventListener('push', event => {
         tag: data.tag,
         renotify: !!data.tag,
         requireInteraction: true,
-        data: { url: data.url || '/' },
+        data: { url: data.url || '/', speak: title + '. ' + (data.body || '') },
         vibrate: [300, 150, 300]
     };
     event.waitUntil((async () => {
@@ -54,13 +54,21 @@ self.addEventListener('push', event => {
 
 self.addEventListener('notificationclick', event => {
     event.notification.close();
-    const url = (event.notification.data && event.notification.data.url) || '/';
-    event.waitUntil(
-        self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
-            for (const c of list) { if ('focus' in c) { c.navigate(url); return c.focus(); } }
-            if (self.clients.openWindow) return self.clients.openWindow(url);
-        })
-    );
+    const d = event.notification.data || {};
+    const url = d.url || '/';
+    const speak = d.speak ? ('#speak=' + encodeURIComponent(d.speak)) : '';
+    event.waitUntil((async () => {
+        const list = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+        for (const c of list) {
+            if ('focus' in c) {
+                await c.focus();
+                if (d.speak) c.postMessage({ type: 'dp-speak', text: d.speak });
+                return;
+            }
+        }
+        // App was closed: open it with the text in the hash so the page reads it on load.
+        if (self.clients.openWindow) return self.clients.openWindow(url + speak);
+    })());
 });
 
 self.addEventListener('fetch', event => {

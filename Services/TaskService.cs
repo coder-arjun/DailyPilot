@@ -68,11 +68,15 @@ public class TaskService : ITaskService
         var task = await _db.Tasks.FirstOrDefaultAsync(t => t.Id == updated.Id && t.UserId == userId);
         if (task is null) return false;
 
+        // Rescheduling (new day or new reminder time) re-arms the reminder so it can fire again.
+        var rescheduled = task.PlannedDate != updated.PlannedDate || task.ReminderTime != updated.ReminderTime;
+
         task.Title = updated.Title;
         task.Notes = updated.Notes;
         task.PlannedDate = updated.PlannedDate;
         task.DueTime = updated.DueTime;
         task.ReminderTime = updated.ReminderTime;
+        if (rescheduled) task.ReminderFiredOn = null;
         task.Priority = updated.Priority;
         task.EnergyLevel = updated.EnergyLevel;
         task.EstimatedMinutes = updated.EstimatedMinutes;
@@ -104,6 +108,7 @@ public class TaskService : ITaskService
         {
             task.Status = DailyTaskStatus.Pending;
             task.CompletedAt = null;
+            task.ReminderFiredOn = null;   // re-arm: a reopened task's reminder can fire again
             AddHistory(task, "Reopened", null);
         }
         else

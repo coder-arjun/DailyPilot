@@ -18,8 +18,9 @@
             '<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>' +
             '</div>';
         container.appendChild(el);
-        const toast = new bootstrap.Toast(el, { delay: 10000 });
+        const toast = new bootstrap.Toast(el, { delay: 4000 });
         toast.show();
+        el.addEventListener('hidden.bs.toast', () => el.remove());
     }
 
     async function poll() {

@@ -1,4 +1,5 @@
 using DailyPilot.Models;
+using DailyPilot.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -40,6 +41,26 @@ public class SettingsController : Controller
         await _userManager.UpdateAsync(user);
         TempData["Success"] = "Settings saved.";
         return RedirectToAction(nameof(Index));
+    }
+
+    // Auto-detect and store the user's real timezone from the browser (so reminders fire
+    // at the correct local time even if registration defaulted to the server's zone).
+    [HttpPost]
+    [Route("api/profile/timezone")]
+    [IgnoreAntiforgeryToken]
+    public async Task<IActionResult> SetTimeZone(string tz)
+    {
+        if (string.IsNullOrWhiteSpace(tz)) return BadRequest();
+        var user = await _userManager.GetUserAsync(User);
+        if (user is null) return Unauthorized();
+
+        var normalized = TimeZoneHelper.Normalize(tz);
+        if (!string.Equals(user.TimeZoneId, normalized, StringComparison.OrdinalIgnoreCase))
+        {
+            user.TimeZoneId = normalized;
+            await _userManager.UpdateAsync(user);
+        }
+        return Ok(new { timeZone = normalized });
     }
 
     // Persist the chosen theme to the user's profile (called by the navbar theme picker).

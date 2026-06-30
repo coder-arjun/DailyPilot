@@ -147,7 +147,7 @@
                                     <li class="nav-item dropdown">
                                         <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                             <i class="bi bi-@(currentWs is null ? "person-workspace" : "people")"></i>
-                                            <span class="@(currentWs is null ? "d-none d-lg-inline" : "")">@(currentWs?.Name ?? "Personal")</span>
+                                            <span>@(currentWs?.Name ?? "Personal")</span>
                                         </a>
                                         <ul class="dropdown-menu dropdown-menu-end">
                                             <li>
