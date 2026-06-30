@@ -1,5 +1,5 @@
 // DayPilot service worker — app-shell caching + offline fallback (PRD Phase 3 / PWA).
-const CACHE = 'daypilot-v11';
+const CACHE = 'daypilot-v12';
 const APP_SHELL = [
     '/offline.html',
     '/manifest.webmanifest',
@@ -44,7 +44,12 @@ self.addEventListener('push', event => {
         data: { url: data.url || '/' },
         vibrate: [300, 150, 300]
     };
-    event.waitUntil(self.registration.showNotification(title, options));
+    event.waitUntil((async () => {
+        await self.registration.showNotification(title, options);
+        // If a tab is open, ask it to read the reminder aloud (TTS works only in a page).
+        const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+        for (const c of clients) c.postMessage({ type: 'dp-speak', text: title + '. ' + (data.body || '') });
+    })());
 });
 
 self.addEventListener('notificationclick', event => {

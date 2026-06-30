@@ -35,6 +35,7 @@ public class SettingsController : Controller
         user.EndOfDayReminderTime = form.EndOfDayReminderTime;
         user.EnableAutoCarryForward = form.EnableAutoCarryForward;
         user.DarkMode = form.DarkMode;
+        user.SpeakReminders = form.SpeakReminders;
 
         await _userManager.UpdateAsync(user);
         TempData["Success"] = "Settings saved.";

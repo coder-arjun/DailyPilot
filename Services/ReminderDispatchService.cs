@@ -75,6 +75,34 @@ public class ReminderDispatchService : IReminderDispatchService
                 t.ReminderFiredOn = today;
                 changed = true;
             }
+
+            // --- Habit interval reminders (e.g. drink water every hour within a window) ---
+            var habits = await _db.Habits
+                .Where(h => h.UserId == u.Id && h.IsActive && h.ReminderEnabled && h.ReminderIntervalMinutes > 0)
+                .ToListAsync();
+
+            foreach (var h in habits)
+            {
+                var tod = localNow.TimeOfDay;
+                var startTs = h.ReminderStart.ToTimeSpan();
+                var endTs = h.ReminderEnd.ToTimeSpan();
+                if (tod < startTs || tod > endTs) continue;
+
+                // Most recent interval slot at or before "now".
+                var slotsElapsed = Math.Floor((tod - startTs).TotalMinutes / h.ReminderIntervalMinutes);
+                var slotTs = startTs + TimeSpan.FromMinutes(slotsElapsed * h.ReminderIntervalMinutes);
+                var slotLocal = DateTime.SpecifyKind(today.ToDateTime(TimeOnly.FromTimeSpan(slotTs)), DateTimeKind.Unspecified);
+                var slotUtc = TimeZoneInfo.ConvertTimeToUtc(slotLocal, tz);
+
+                var sinceSlot = nowUtc - slotUtc;
+                if (sinceSlot >= TimeSpan.Zero && sinceSlot <= TimeSpan.FromMinutes(10) && h.LastReminderSentUtc != slotUtc)
+                {
+                    await _push.SendToUserAsync(u.Id, "🔔 " + h.Name, "Habit reminder", "/Habits", "dp-habit-" + h.Id);
+                    h.LastReminderSentUtc = slotUtc;
+                    changed = true;
+                }
+            }
+
             if (changed) await _db.SaveChangesAsync();
         }
     }

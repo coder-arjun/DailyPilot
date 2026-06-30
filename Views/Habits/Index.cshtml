@@ -1,6 +1,9 @@
 @model HabitsPageViewModel
 @using DailyPilot.Models
-@{ ViewData["Title"] = "Habits"; }
+@{
+    ViewData["Title"] = "Habits";
+    var intervals = new (int Min, string Label)[] { (30, "30 minutes"), (60, "1 hour"), (120, "2 hours"), (180, "3 hours"), (240, "4 hours") };
+}
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h2 class="mb-0"><i class="bi bi-trophy"></i> Habits</h2>
@@ -9,19 +12,19 @@
 
 <div class="collapse mb-3" id="newHabit">
     <div class="card"><div class="card-body">
-        <form asp-action="Create" method="post" class="row g-2 align-items-end">
+        <form asp-action="Create" method="post" class="row g-3 align-items-end">
             @Html.AntiForgeryToken()
             <div class="col-md-4">
                 <label class="form-label">Name</label>
-                <input name="name" class="form-control" required maxlength="100" placeholder="e.g. Read 20 minutes" />
+                <input name="name" class="form-control" required maxlength="100" placeholder="e.g. Drink water" />
             </div>
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <label class="form-label">Description</label>
                 <input name="description" class="form-control" maxlength="500" />
             </div>
             <div class="col-md-2">
                 <label class="form-label">Frequency</label>
-                <select name="frequency" class="form-select" id="freqSelect">
+                <select name="frequency" class="form-select">
                     <option value="@HabitFrequency.Daily">Daily</option>
                     <option value="@HabitFrequency.Weekly">Weekly</option>
                 </select>
@@ -34,8 +37,33 @@
                 <label class="form-label">Colour</label>
                 <input name="color" type="color" value="#198754" class="form-control form-control-color" />
             </div>
-            <div class="col-md-1">
-                <button type="submit" class="btn btn-primary w-100">Add</button>
+
+            <div class="col-12"><hr class="my-1" /></div>
+            <div class="col-12">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" name="reminderEnabled" value="true" id="remEnable" />
+                    <label class="form-check-label" for="remEnable"><i class="bi bi-bell"></i> Remind me on an interval (e.g. drink water hourly)</label>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Every</label>
+                <select name="reminderIntervalMinutes" class="form-select">
+                    @foreach (var iv in intervals)
+                    {
+                        <option value="@iv.Min" selected="@(iv.Min == 60)">@iv.Label</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">From</label>
+                <input type="time" name="reminderStart" value="09:00" class="form-control" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Until</label>
+                <input type="time" name="reminderEnd" value="21:00" class="form-control" />
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Add habit</button>
             </div>
         </form>
     </div></div>
@@ -64,12 +92,18 @@ else
                                 </h5>
                                 @if (!string.IsNullOrWhiteSpace(h.Habit.Description))
                                 {
-                                    <p class="text-muted small mb-2">@h.Habit.Description</p>
+                                    <p class="text-muted small mb-1">@h.Habit.Description</p>
+                                }
+                                @if (h.Habit.ReminderEnabled)
+                                {
+                                    var ivLabel = intervals.FirstOrDefault(i => i.Min == h.Habit.ReminderIntervalMinutes).Label ?? ($"{h.Habit.ReminderIntervalMinutes} min");
+                                    <p class="small text-primary mb-2"><i class="bi bi-bell-fill"></i> Every @ivLabel · @h.Habit.ReminderStart.ToString("HH:mm")–@h.Habit.ReminderEnd.ToString("HH:mm")</p>
                                 }
                             </div>
                             <div class="dropdown">
                                 <button class="btn btn-sm btn-link text-muted" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical"></i></button>
                                 <ul class="dropdown-menu dropdown-menu-end">
+                                    <li><button class="dropdown-item" type="button" data-bs-toggle="collapse" data-bs-target="#editHabit-@h.Habit.Id"><i class="bi bi-pencil"></i> Edit</button></li>
                                     <li>
                                         <form asp-action="Archive" method="post" class="m-0">
                                             @Html.AntiForgeryToken()
@@ -109,6 +143,63 @@ else
                                 @(h.DoneToday ? "Done today" : "Mark done today")
                             </button>
                         </form>
+
+                        <div class="collapse mt-3" id="editHabit-@h.Habit.Id">
+                            <hr />
+                            <form asp-action="Edit" method="post" class="row g-2">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@h.Habit.Id" />
+                                <div class="col-12">
+                                    <label class="form-label small">Name</label>
+                                    <input name="name" class="form-control form-control-sm" required maxlength="100" value="@h.Habit.Name" />
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label small">Description</label>
+                                    <input name="description" class="form-control form-control-sm" maxlength="500" value="@h.Habit.Description" />
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small">Frequency</label>
+                                    <select name="frequency" class="form-select form-select-sm">
+                                        <option value="@HabitFrequency.Daily" selected="@(h.Habit.Frequency == HabitFrequency.Daily)">Daily</option>
+                                        <option value="@HabitFrequency.Weekly" selected="@(h.Habit.Frequency == HabitFrequency.Weekly)">Weekly</option>
+                                    </select>
+                                </div>
+                                <div class="col-3">
+                                    <label class="form-label small">×/week</label>
+                                    <input name="targetPerWeek" type="number" min="1" max="7" value="@h.Habit.TargetPerWeek" class="form-control form-control-sm" />
+                                </div>
+                                <div class="col-3">
+                                    <label class="form-label small">Colour</label>
+                                    <input name="color" type="color" value="@h.Habit.Color" class="form-control form-control-color form-control-sm" />
+                                </div>
+                                <div class="col-12">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="reminderEnabled" value="true" id="remEdit-@h.Habit.Id" checked="@h.Habit.ReminderEnabled" />
+                                        <label class="form-check-label small" for="remEdit-@h.Habit.Id"><i class="bi bi-bell"></i> Interval reminder</label>
+                                    </div>
+                                </div>
+                                <div class="col-5">
+                                    <label class="form-label small">Every</label>
+                                    <select name="reminderIntervalMinutes" class="form-select form-select-sm">
+                                        @foreach (var iv in intervals)
+                                        {
+                                            <option value="@iv.Min" selected="@(iv.Min == h.Habit.ReminderIntervalMinutes)">@iv.Label</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-3">
+                                    <label class="form-label small">From</label>
+                                    <input type="time" name="reminderStart" value="@h.Habit.ReminderStart.ToString("HH:mm")" class="form-control form-control-sm" />
+                                </div>
+                                <div class="col-4">
+                                    <label class="form-label small">Until</label>
+                                    <input type="time" name="reminderEnd" value="@h.Habit.ReminderEnd.ToString("HH:mm")" class="form-control form-control-sm" />
+                                </div>
+                                <div class="col-12">
+                                    <button type="submit" class="btn btn-sm btn-primary w-100"><i class="bi bi-check-lg"></i> Save changes</button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>

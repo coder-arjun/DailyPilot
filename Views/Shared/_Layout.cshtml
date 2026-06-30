@@ -45,6 +45,7 @@
     string Active(params string[] controllers) => controllers.Contains(ctrl) ? "active" : "";
 
     var vapidKey = Config["Push:PublicKey"];
+    var speakReminders = currentUser?.SpeakReminders == true;
 }
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="@bsTheme" data-dp-theme="@palette">
@@ -275,6 +276,7 @@
     <script src="~/js/site.js" asp-append-version="true"></script>
     @if (signedIn)
     {
+        <script>window.dpSpeakReminders = @(speakReminders ? "true" : "false");</script>
         <script src="~/js/notifications.js" asp-append-version="true"></script>
         <script src="~/js/reminders.js" asp-append-version="true"></script>
         if (!string.IsNullOrWhiteSpace(vapidKey))

@@ -18,6 +18,23 @@
         fetch('/api/reminders/ack/' + taskId, { method: 'POST', headers: { 'RequestVerificationToken': token() } }).catch(() => { });
     }
 
+    function speak(text) {
+        if (!window.dpSpeakReminders || !('speechSynthesis' in window)) return;
+        try {
+            const u = new SpeechSynthesisUtterance(text);
+            u.rate = 1; u.pitch = 1;
+            window.speechSynthesis.cancel();
+            window.speechSynthesis.speak(u);
+        } catch (e) { /* TTS unavailable */ }
+    }
+
+    // The service worker asks the page to speak when a push arrives and a tab is focused.
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.addEventListener('message', (e) => {
+            if (e.data && e.data.type === 'dp-speak' && e.data.text) speak(e.data.text);
+        });
+    }
+
     async function notify(r) {
         // Only fire if the user allows notifications and a service worker is available;
         // otherwise leave it for the server push (no in-app fallback by design).
@@ -35,6 +52,7 @@
                 data: { url: '/Tasks' }
             });
             ack(r.taskId);                                  // stop the server from re-pushing the same one
+            speak('Reminder. ' + r.title);
         } catch (e) { /* SW not ready — server push will cover it */ }
     }
 

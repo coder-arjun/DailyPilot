@@ -38,7 +38,8 @@ public class HabitsController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(string name, string? description, string color, HabitFrequency frequency, int targetPerWeek)
+    public async Task<IActionResult> Create(string name, string? description, string color, HabitFrequency frequency, int targetPerWeek,
+        bool reminderEnabled = false, int reminderIntervalMinutes = 60, TimeOnly? reminderStart = null, TimeOnly? reminderEnd = null)
     {
         var user = await CurrentUserAsync();
         if (string.IsNullOrWhiteSpace(name))
@@ -53,9 +54,42 @@ public class HabitsController : Controller
             Description = description,
             Color = string.IsNullOrWhiteSpace(color) ? "#198754" : color,
             Frequency = frequency,
-            TargetPerWeek = Math.Clamp(targetPerWeek, 1, 7)
+            TargetPerWeek = Math.Clamp(targetPerWeek, 1, 7),
+            ReminderEnabled = reminderEnabled,
+            ReminderIntervalMinutes = reminderIntervalMinutes < 5 ? 60 : reminderIntervalMinutes,
+            ReminderStart = reminderStart ?? new TimeOnly(9, 0),
+            ReminderEnd = reminderEnd ?? new TimeOnly(21, 0)
         });
         TempData["Success"] = "Habit added.";
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Edit(int id, string name, string? description, string color, HabitFrequency frequency, int targetPerWeek,
+        bool reminderEnabled = false, int reminderIntervalMinutes = 60, TimeOnly? reminderStart = null, TimeOnly? reminderEnd = null)
+    {
+        var user = await CurrentUserAsync();
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            TempData["Error"] = "Please enter a habit name.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        await _habits.UpdateAsync(user.Id, new Habit
+        {
+            Id = id,
+            Name = name.Trim(),
+            Description = description,
+            Color = string.IsNullOrWhiteSpace(color) ? "#198754" : color,
+            Frequency = frequency,
+            TargetPerWeek = Math.Clamp(targetPerWeek, 1, 7),
+            ReminderEnabled = reminderEnabled,
+            ReminderIntervalMinutes = reminderIntervalMinutes < 5 ? 60 : reminderIntervalMinutes,
+            ReminderStart = reminderStart ?? new TimeOnly(9, 0),
+            ReminderEnd = reminderEnd ?? new TimeOnly(21, 0)
+        });
+        TempData["Success"] = "Habit updated.";
         return RedirectToAction(nameof(Index));
     }
 

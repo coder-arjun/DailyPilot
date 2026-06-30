@@ -32,6 +32,9 @@ public class ApplicationUser : IdentityUser
     /// <summary>Selected UI theme key (e.g. obsidian, nordic, emerald, ultraviolet, titanium).</summary>
     public string Theme { get; set; } = "obsidian";
 
+    /// <summary>Read reminders aloud (text-to-speech) when the app is open.</summary>
+    public bool SpeakReminders { get; set; } = false;
+
     // --- Streak tracking (PRD §5 / §10) ---
     public int CurrentStreak { get; set; }
     public int LongestStreak { get; set; }

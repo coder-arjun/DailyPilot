@@ -31,6 +31,14 @@ public class Habit
 
     public bool IsActive { get; set; } = true;
 
+    // --- Interval reminders (e.g. "drink water every hour" between 09:00–21:00) ---
+    public bool ReminderEnabled { get; set; }
+    public int ReminderIntervalMinutes { get; set; } = 60;
+    public TimeOnly ReminderStart { get; set; } = new(9, 0);
+    public TimeOnly ReminderEnd { get; set; } = new(21, 0);
+    /// <summary>UTC time of the last interval slot that was pushed (per-slot dedupe).</summary>
+    public DateTime? LastReminderSentUtc { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public string UserId { get; set; } = string.Empty;

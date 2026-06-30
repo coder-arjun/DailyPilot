@@ -66,6 +66,10 @@ public class HabitService : IHabitService
         habit.Color = updated.Color;
         habit.Frequency = updated.Frequency;
         habit.TargetPerWeek = updated.TargetPerWeek;
+        habit.ReminderEnabled = updated.ReminderEnabled;
+        habit.ReminderIntervalMinutes = updated.ReminderIntervalMinutes;
+        habit.ReminderStart = updated.ReminderStart;
+        habit.ReminderEnd = updated.ReminderEnd;
         await _db.SaveChangesAsync();
         return true;
     }

@@ -60,7 +60,11 @@
                         <input asp-for="EnableAutoCarryForward" class="form-check-input" />
                         <label asp-for="EnableAutoCarryForward" class="form-check-label">Automatically carry forward unfinished tasks</label>
                     </div>
-                    <div class="col-md-6 ms-1 text-muted small d-flex align-items-center">
+                    <div class="col-md-6 form-check form-switch ms-1">
+                        <input asp-for="SpeakReminders" class="form-check-input" />
+                        <label asp-for="SpeakReminders" class="form-check-label">Read reminders aloud (when the app is open)</label>
+                    </div>
+                    <div class="col-12 ms-1 text-muted small d-flex align-items-center mt-1">
                         <i class="bi bi-palette me-2"></i> Appearance is controlled by the theme picker in the top bar.
                     </div>
                 </div>
