@@ -56,7 +56,8 @@ public class TasksController : Controller
     {
         var user = await CurrentUserAsync();
         await _seeder.EnsureDefaultsAsync(user.Id);
-        var day = date ?? await _tasks.GetLocalTodayAsync(user);
+        var todayDate = await _tasks.GetLocalTodayAsync(user);
+        var day = date ?? todayDate;
         var wsId = await ResolveWorkspaceIdAsync(user.Id);
 
         var tasks = await _tasks.GetTasksForDateAsync(user.Id, day, wsId);
@@ -70,6 +71,7 @@ public class TasksController : Controller
         var vm = new TodayViewModel
         {
             Date = day,
+            Today = todayDate,
             Tasks = filtered.ToList(),
             Categories = await UserCategoriesAsync(user.Id),
             Tags = await UserTagsAsync(user.Id),
@@ -207,13 +209,15 @@ public class TasksController : Controller
     {
         var user = await CurrentUserAsync();
         await _seeder.EnsureDefaultsAsync(user.Id);
-        var day = date ?? await _tasks.GetLocalTodayAsync(user);
+        var todayDate = await _tasks.GetLocalTodayAsync(user);
+        var day = date ?? todayDate;
         var wsId = await ResolveWorkspaceIdAsync(user.Id);
 
         var tasks = await _tasks.GetTasksForDateAsync(user.Id, day, wsId);
         var vm = new KanbanViewModel
         {
             Date = day,
+            Today = todayDate,
             WorkspaceId = wsId,
             WorkspaceName = wsId is null ? null : (await _workspaces.GetAsync(wsId.Value))?.Name,
             Todo = tasks.Where(t => t.Status is DailyTaskStatus.Pending or DailyTaskStatus.CarriedForward).ToList(),
@@ -228,7 +232,8 @@ public class TasksController : Controller
     {
         var user = await CurrentUserAsync();
         await _seeder.EnsureDefaultsAsync(user.Id);
-        var day = date ?? await _tasks.GetLocalTodayAsync(user);
+        var todayDate = await _tasks.GetLocalTodayAsync(user);
+        var day = date ?? todayDate;
         var wsId = await ResolveWorkspaceIdAsync(user.Id);
 
         var tasks = (await _tasks.GetTasksForDateAsync(user.Id, day, wsId))
@@ -241,6 +246,7 @@ public class TasksController : Controller
         var vm = new MatrixViewModel
         {
             Date = day,
+            Today = todayDate,
             WorkspaceId = wsId,
             WorkspaceName = wsId is null ? null : (await _workspaces.GetAsync(wsId.Value))?.Name,
             DoFirst = tasks.Where(t => Important(t) && Urgent(t)).ToList(),

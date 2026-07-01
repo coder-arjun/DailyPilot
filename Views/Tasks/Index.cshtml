@@ -31,9 +31,16 @@
             <a class="btn btn-outline-secondary" asp-action="Matrix" asp-route-date="@Model.Date.ToString("yyyy-MM-dd")"><i class="bi bi-grid-3x3-gap"></i> Matrix</a>
         </div>
         <div class="btn-group">
-            <a class="btn btn-outline-secondary" asp-action="Index" asp-route-date="@prev.ToString("yyyy-MM-dd")"><i class="bi bi-chevron-left"></i></a>
-            <a class="btn btn-outline-secondary" asp-action="Index">Today</a>
-            <a class="btn btn-outline-secondary" asp-action="Index" asp-route-date="@next.ToString("yyyy-MM-dd")"><i class="bi bi-chevron-right"></i></a>
+            <a class="btn btn-outline-secondary" asp-action="Index" asp-route-date="@prev.ToString("yyyy-MM-dd")" title="Previous day"><i class="bi bi-chevron-left"></i></a>
+            @if (Model.Date == Model.Today)
+            {
+                <span class="btn btn-outline-secondary active disabled" aria-current="date">Today</span>
+            }
+            else
+            {
+                <a class="btn btn-primary" asp-action="Index" title="Back to today"><i class="bi bi-arrow-counterclockwise"></i> Today</a>
+            }
+            <a class="btn btn-outline-secondary" asp-action="Index" asp-route-date="@next.ToString("yyyy-MM-dd")" title="Next day"><i class="bi bi-chevron-right"></i></a>
         </div>
     </div>
 </div>

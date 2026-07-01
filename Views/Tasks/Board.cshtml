@@ -27,9 +27,16 @@
 </div>
 
 <div class="btn-group btn-group-sm mb-3">
-    <a class="btn btn-outline-secondary" asp-action="Board" asp-route-date="@Model.Date.AddDays(-1).ToString("yyyy-MM-dd")"><i class="bi bi-chevron-left"></i></a>
-    <a class="btn btn-outline-secondary" asp-action="Board">Today</a>
-    <a class="btn btn-outline-secondary" asp-action="Board" asp-route-date="@Model.Date.AddDays(1).ToString("yyyy-MM-dd")"><i class="bi bi-chevron-right"></i></a>
+    <a class="btn btn-outline-secondary" asp-action="Board" asp-route-date="@Model.Date.AddDays(-1).ToString("yyyy-MM-dd")" title="Previous day"><i class="bi bi-chevron-left"></i></a>
+    @if (Model.Date == Model.Today)
+    {
+        <span class="btn btn-outline-secondary active disabled" aria-current="date">Today</span>
+    }
+    else
+    {
+        <a class="btn btn-primary" asp-action="Board" title="Back to today"><i class="bi bi-arrow-counterclockwise"></i> Today</a>
+    }
+    <a class="btn btn-outline-secondary" asp-action="Board" asp-route-date="@Model.Date.AddDays(1).ToString("yyyy-MM-dd")" title="Next day"><i class="bi bi-chevron-right"></i></a>
 </div>
 
 <div class="dp-kanban" id="dpKanban">

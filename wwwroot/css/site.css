@@ -143,6 +143,19 @@ a { text-decoration: none; }
     padding: .5rem .7rem;
 }
 
+/* Desktop navbar: keep every top-level item (incl. the "More" dropdown + its caret)
+   on one vertically-centred baseline so nothing sits higher than its neighbours. */
+@media (min-width: 992px) {
+    .dp-navbar .navbar-nav { align-items: center; }
+    .dp-navbar .navbar-nav > .nav-item { display: flex; align-items: center; }
+    .dp-navbar .navbar-nav > .nav-item > .nav-link {
+        display: inline-flex; align-items: center; gap: .4rem; white-space: nowrap;
+    }
+    .dp-navbar .navbar-nav > .nav-item > .nav-link.dropdown-toggle::after {
+        margin-left: .1rem; vertical-align: middle;
+    }
+}
+
 .dp-icon-btn {
     width: 40px;
     height: 40px;

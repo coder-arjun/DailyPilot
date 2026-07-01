@@ -101,6 +101,8 @@ public class TaskFormViewModel
 public class KanbanViewModel
 {
     public DateOnly Date { get; set; }
+    /// <summary>The user's actual local "today", for the date navigator.</summary>
+    public DateOnly Today { get; set; }
     public int? WorkspaceId { get; set; }
     public string? WorkspaceName { get; set; }
     public List<TaskItem> Todo { get; set; } = new();
@@ -113,6 +115,8 @@ public class KanbanViewModel
 public class MatrixViewModel
 {
     public DateOnly Date { get; set; }
+    /// <summary>The user's actual local "today", for the date navigator.</summary>
+    public DateOnly Today { get; set; }
     public int? WorkspaceId { get; set; }
     public string? WorkspaceName { get; set; }
     public List<TaskItem> DoFirst { get; set; } = new();       // important + urgent
@@ -126,6 +130,8 @@ public class MatrixViewModel
 public class TodayViewModel
 {
     public DateOnly Date { get; set; }
+    /// <summary>The user's actual local "today", for the date navigator.</summary>
+    public DateOnly Today { get; set; }
     public List<TaskItem> Tasks { get; set; } = new();
     public List<Category> Categories { get; set; } = new();
 
