@@ -15,12 +15,15 @@ public class JobsController : Controller
 {
     private readonly IReminderDispatchService _reminders;
     private readonly INotificationService _notifications;
+    private readonly ICarryForwardService _carryForward;
     private readonly IConfiguration _config;
 
-    public JobsController(IReminderDispatchService reminders, INotificationService notifications, IConfiguration config)
+    public JobsController(IReminderDispatchService reminders, INotificationService notifications,
+        ICarryForwardService carryForward, IConfiguration config)
     {
         _reminders = reminders;
         _notifications = notifications;
+        _carryForward = carryForward;
         _config = config;
     }
 
@@ -35,6 +38,7 @@ public class JobsController : Controller
         switch (job.ToLowerInvariant())
         {
             case "reminders": await _reminders.DispatchDueAsync(); break;
+            case "carryforward": await _carryForward.RunForAllUsersAsync(); break;
             case "morning": await _notifications.SendMorningBriefingsAsync(); break;
             case "eod": await _notifications.SendEndOfDaySummariesAsync(); break;
             case "weekly": await _notifications.SendWeeklyReviewsAsync(); break;

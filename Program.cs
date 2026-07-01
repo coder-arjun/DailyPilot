@@ -16,18 +16,19 @@ var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
-// --- Persist Data Protection keys (FIXES frequent logouts) ---
-// Without this, every app restart/recycle (frequent on free hosting) regenerates the
-// key ring, which invalidates all existing auth cookies and signs everyone out.
-var keysDir = Path.Combine(builder.Environment.ContentRootPath, "Storage", "dpkeys");
-Directory.CreateDirectory(keysDir);
-builder.Services.AddDataProtection()
-    .PersistKeysToFileSystem(new DirectoryInfo(keysDir))
-    .SetApplicationName("DayPilot");
-
 // --- EF Core (PRD §12: SQL Server + EF Core) ---
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
+
+// --- Persist Data Protection keys IN THE DATABASE (FIXES frequent logouts) ---
+// The key ring encrypts the auth cookie. Storing it on the filesystem (Storage/dpkeys)
+// is fragile on MonsterASP — a redeploy / filesystem reset wipes it, invalidating every
+// cookie and silently logging everyone out. Persisting to the DB (dbo.DataProtectionKeys)
+// is durable across redeploys and restarts. SetApplicationName must stay "DayPilot"
+// forever — changing it invalidates all existing cookies.
+builder.Services.AddDataProtection()
+    .PersistKeysToDbContext<ApplicationDbContext>()
+    .SetApplicationName("DayPilot");
 
 // --- ASP.NET Identity (PRD §12 Authentication) ---
 builder.Services
@@ -61,11 +62,24 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
         ? CookieSecurePolicy.SameAsRequest
         : CookieSecurePolicy.Always;
-    options.ExpireTimeSpan = TimeSpan.FromHours(8);
+    options.Cookie.IsEssential = true;
+    options.Cookie.Name = ".DayPilot.Auth";
+    // 30-day sliding lifetime (matches Finoma). An 8-hour window logged users out
+    // after any overnight/inactive gap, which also caused missed daily reminders.
+    options.ExpireTimeSpan = TimeSpan.FromDays(30);
     options.SlidingExpiration = true;
     options.LoginPath = "/Identity/Account/Login";
     options.AccessDeniedPath = "/Identity/Account/AccessDenied";
 });
+
+// Re-validate the security stamp every 30 min (not every request) so routine use
+// doesn't churn the cookie; still catches password/security changes reasonably fast.
+builder.Services.Configure<Microsoft.AspNetCore.Identity.SecurityStampValidatorOptions>(options =>
+{
+    options.ValidationInterval = TimeSpan.FromMinutes(30);
+});
+
+builder.Services.AddMemoryCache();
 
 // --- Application services ---
 builder.Services.AddSingleton<IDateTimeProvider, SystemDateTimeProvider>();

@@ -23,10 +23,12 @@ public class TasksController : Controller
     private readonly IAiTaskAssistant _ai;
     private readonly IPushNotificationService _push;
     private readonly IAppEmailSender _email;
+    private readonly ICarryForwardService _carryForward;
 
     public TasksController(ITaskService tasks, ApplicationDbContext db, UserManager<ApplicationUser> userManager,
         IUserSeeder seeder, IWorkspaceContext wsContext, IWorkspaceService workspaces,
-        IAiTaskAssistant ai, IPushNotificationService push, IAppEmailSender email)
+        IAiTaskAssistant ai, IPushNotificationService push, IAppEmailSender email,
+        ICarryForwardService carryForward)
     {
         _tasks = tasks;
         _db = db;
@@ -37,6 +39,20 @@ public class TasksController : Controller
         _ai = ai;
         _push = push;
         _email = email;
+        _carryForward = carryForward;
+    }
+
+    /// <summary>
+    /// Runs carry-forward + recurring-task materialisation for the user whenever they
+    /// view their tasks. On the free tier the app sleeps, so the nightly Hangfire job
+    /// often never fires — without this, overdue tasks don't roll over and recurring
+    /// tasks (daily/weekly/weekdays) never generate their next occurrence. The operation
+    /// is idempotent and cheap (a couple of indexed queries), so running it per view is
+    /// safe and also catches tasks back-dated later in the day.
+    /// </summary>
+    private async Task EnsureCarriedForwardAsync(string userId)
+    {
+        try { await _carryForward.RunForUserAsync(userId); } catch { /* never block the page */ }
     }
 
     private async Task<ApplicationUser> CurrentUserAsync() =>
@@ -57,6 +73,7 @@ public class TasksController : Controller
         var user = await CurrentUserAsync();
         await _seeder.EnsureDefaultsAsync(user.Id);
         var todayDate = await _tasks.GetLocalTodayAsync(user);
+        await EnsureCarriedForwardAsync(user.Id);
         var day = date ?? todayDate;
         var wsId = await ResolveWorkspaceIdAsync(user.Id);
 
@@ -210,6 +227,7 @@ public class TasksController : Controller
         var user = await CurrentUserAsync();
         await _seeder.EnsureDefaultsAsync(user.Id);
         var todayDate = await _tasks.GetLocalTodayAsync(user);
+        await EnsureCarriedForwardAsync(user.Id);
         var day = date ?? todayDate;
         var wsId = await ResolveWorkspaceIdAsync(user.Id);
 
@@ -233,6 +251,7 @@ public class TasksController : Controller
         var user = await CurrentUserAsync();
         await _seeder.EnsureDefaultsAsync(user.Id);
         var todayDate = await _tasks.GetLocalTodayAsync(user);
+        await EnsureCarriedForwardAsync(user.Id);
         var day = date ?? todayDate;
         var wsId = await ResolveWorkspaceIdAsync(user.Id);
 

@@ -1,10 +1,14 @@
 using DailyPilot.Models;
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace DailyPilot.Data;
 
-public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
+// Implements IDataProtectionKeyContext so the Data Protection key ring (which
+// encrypts the auth cookie) is stored durably in the DB — surviving redeploys /
+// filesystem resets that would otherwise wipe filesystem keys and log everyone out.
+public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IDataProtectionKeyContext
 {
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
         : base(options)
@@ -26,6 +30,9 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<PushSubscription> PushSubscriptions => Set<PushSubscription>();
     public DbSet<TaskChecklistItem> TaskChecklistItems => Set<TaskChecklistItem>();
     public DbSet<TaskComment> TaskComments => Set<TaskComment>();
+
+    /// <summary>Data Protection key ring (auth-cookie encryption keys), persisted in dbo.</summary>
+    public DbSet<Microsoft.AspNetCore.DataProtection.EntityFrameworkCore.DataProtectionKey> DataProtectionKeys => Set<Microsoft.AspNetCore.DataProtection.EntityFrameworkCore.DataProtectionKey>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
