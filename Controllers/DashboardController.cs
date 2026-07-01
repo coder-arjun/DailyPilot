@@ -11,12 +11,15 @@ public class DashboardController : Controller
 {
     private readonly IAnalyticsService _analytics;
     private readonly ITaskService _tasks;
+    private readonly IGamificationService _gamification;
     private readonly UserManager<ApplicationUser> _userManager;
 
-    public DashboardController(IAnalyticsService analytics, ITaskService tasks, UserManager<ApplicationUser> userManager)
+    public DashboardController(IAnalyticsService analytics, ITaskService tasks,
+        IGamificationService gamification, UserManager<ApplicationUser> userManager)
     {
         _analytics = analytics;
         _tasks = tasks;
+        _gamification = gamification;
         _userManager = userManager;
     }
 
@@ -26,6 +29,7 @@ public class DashboardController : Controller
         var user = (await _userManager.GetUserAsync(User))!;
         var today = await _tasks.GetLocalTodayAsync(user);
         var vm = await _analytics.BuildDashboardAsync(user, today);
+        ViewBag.Gamification = await _gamification.GetSummaryAsync(user);
         return View(vm);
     }
 }

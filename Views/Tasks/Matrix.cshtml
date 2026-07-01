@@ -1,0 +1,69 @@
+@model MatrixViewModel
+@{
+    ViewData["Title"] = "Matrix";
+    var d = Model.Date.ToString("yyyy-MM-dd");
+    string PriorityColor(Priority p) => p switch { Priority.High => "#ef4444", Priority.Medium => "#f59e0b", _ => "#94a3b8" };
+
+    var quadrants = new (string Title, string Sub, string Cls, string Icon, List<DailyPilot.Models.TaskItem> Items)[]
+    {
+        ("Do first",  "Important & urgent",       "q1", "bi-fire",          Model.DoFirst),
+        ("Schedule",  "Important, not urgent",    "q2", "bi-calendar-check", Model.Schedule),
+        ("Delegate",  "Urgent, not important",    "q3", "bi-arrow-left-right", Model.Delegate),
+        ("Eliminate", "Neither — reconsider",     "q4", "bi-trash",         Model.Eliminate),
+    };
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <div>
+        <h2 class="mb-0"><i class="bi bi-grid-3x3-gap"></i> Eisenhower Matrix</h2>
+        <small class="text-muted">@Model.Date.ToString("dddd, dd MMM yyyy") · importance = priority, urgency = deadline / slippage</small>
+    </div>
+    <div class="btn-group btn-group-sm" role="group" aria-label="View">
+        <a class="btn btn-outline-secondary" asp-action="Index" asp-route-date="@d"><i class="bi bi-list-ul"></i> List</a>
+        <a class="btn btn-outline-secondary" asp-action="Board" asp-route-date="@d"><i class="bi bi-kanban"></i> Board</a>
+        <a class="btn btn-outline-secondary active" asp-action="Matrix" asp-route-date="@d"><i class="bi bi-grid-3x3-gap"></i> Matrix</a>
+    </div>
+</div>
+
+<div class="btn-group btn-group-sm mb-3">
+    <a class="btn btn-outline-secondary" asp-action="Matrix" asp-route-date="@Model.Date.AddDays(-1).ToString("yyyy-MM-dd")"><i class="bi bi-chevron-left"></i></a>
+    <a class="btn btn-outline-secondary" asp-action="Matrix">Today</a>
+    <a class="btn btn-outline-secondary" asp-action="Matrix" asp-route-date="@Model.Date.AddDays(1).ToString("yyyy-MM-dd")"><i class="bi bi-chevron-right"></i></a>
+</div>
+
+@if (Model.Total == 0)
+{
+    <div class="text-center text-muted py-5">
+        <i class="bi bi-grid-3x3-gap" style="font-size:3rem;"></i>
+        <p class="mt-2">No pending tasks to prioritise for this day.</p>
+    </div>
+}
+else
+{
+    <div class="dp-matrix">
+        @foreach (var q in quadrants)
+        {
+            <div class="dp-matrix-cell @q.Cls">
+                <div class="dp-matrix-head"><i class="bi @q.Icon"></i> <strong>@q.Title</strong> <span class="text-muted small">@q.Sub</span></div>
+                @if (q.Items.Count == 0)
+                {
+                    <div class="text-muted small py-2">Nothing here.</div>
+                }
+                else
+                {
+                    foreach (var t in q.Items)
+                    {
+                        <div class="dp-matrix-task" style="--dp-task-accent:@PriorityColor(t.Priority)">
+                            <a asp-action="Edit" asp-route-id="@t.Id">@t.Title</a>
+                            <span class="d-flex flex-wrap gap-1 mt-1">
+                                <span class="dp-chip bg-body-secondary text-body">@t.Priority</span>
+                                @if (t.DueTime is not null) { <span class="dp-chip bg-body-secondary text-body"><i class="bi bi-clock"></i> @t.DueTime.Value.ToString("HH:mm")</span> }
+                                @if (t.CarryForwardCount > 0) { <span class="dp-chip bg-warning-subtle text-warning-emphasis"><i class="bi bi-arrow-right-circle"></i> ×@t.CarryForwardCount</span> }
+                            </span>
+                        </div>
+                    }
+                }
+            </div>
+        }
+    </div>
+}

@@ -25,12 +25,16 @@ public class HabitService : IHabitService
 {
     private readonly ApplicationDbContext _db;
     private readonly IDateTimeProvider _clock;
+    private readonly IGamificationService _gamification;
 
-    public HabitService(ApplicationDbContext db, IDateTimeProvider clock)
+    public HabitService(ApplicationDbContext db, IDateTimeProvider clock, IGamificationService gamification)
     {
         _db = db;
         _clock = clock;
+        _gamification = gamification;
     }
+
+    private const int HabitCheckInXp = 15;
 
     public async Task<List<HabitStatus>> GetActiveStatusesAsync(string userId, DateOnly today)
     {
@@ -98,7 +102,8 @@ public class HabitService : IHabitService
         if (habit is null) return false;
 
         var entry = await _db.HabitEntries.FirstOrDefaultAsync(e => e.HabitId == habitId && e.Date == date);
-        if (entry is null)
+        var checkedIn = entry is null;
+        if (checkedIn)
         {
             _db.HabitEntries.Add(new HabitEntry
             {
@@ -110,9 +115,10 @@ public class HabitService : IHabitService
         }
         else
         {
-            _db.HabitEntries.Remove(entry);
+            _db.HabitEntries.Remove(entry!);
         }
         await _db.SaveChangesAsync();
+        if (checkedIn) await _gamification.AwardAsync(userId, HabitCheckInXp);
         return true;
     }
 

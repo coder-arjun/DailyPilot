@@ -101,6 +101,40 @@ public class SemanticKernelAiTaskAssistant : IAiTaskAssistant
         }
     }
 
+    // ---------- Task Break-down (subtasks) ----------
+
+    public async Task<BreakdownResult> BreakdownAsync(string title, string? notes, int? estimatedMinutes)
+    {
+        try
+        {
+            var payload = new { title, notes, estimatedMinutes };
+            var system =
+                "You break a to-do into a short, concrete, ordered checklist of actionable subtasks (max 7). " +
+                "Each step should start with a verb and be genuinely useful — no filler. " +
+                "Return JSON: {summary:string, steps:[string]}.";
+            var json = await CompleteJsonAsync(system, JsonSerializer.Serialize(payload));
+            var dto = JsonSerializer.Deserialize<BreakdownDto>(json, JsonOpts) ?? throw new JsonException("null");
+
+            var steps = (dto.Steps ?? new())
+                .Select(s => (s ?? "").Trim())
+                .Where(s => s.Length > 0)
+                .Take(10)
+                .ToList();
+            if (steps.Count == 0) throw new JsonException("empty");
+
+            return new BreakdownResult
+            {
+                Steps = steps,
+                Summary = string.IsNullOrWhiteSpace(dto.Summary) ? $"Broke the task into {steps.Count} steps." : dto.Summary!
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "LLM Breakdown failed; using heuristic fallback.");
+            return await _fallback.BreakdownAsync(title, notes, estimatedMinutes);
+        }
+    }
+
     // ---------- AI Prioritization Engine ----------
 
     public async Task<PrioritizationResult> PrioritizeAsync(IReadOnlyList<TaskItem> tasks)
@@ -356,6 +390,12 @@ public class SemanticKernelAiTaskAssistant : IAiTaskAssistant
         public string? Recurrence { get; set; }
         public string? Category { get; set; }
         public string? Summary { get; set; }
+    }
+
+    private class BreakdownDto
+    {
+        public string? Summary { get; set; }
+        public List<string>? Steps { get; set; }
     }
 
     private class PrioritizationDto

@@ -1,0 +1,84 @@
+@model KanbanViewModel
+@{
+    ViewData["Title"] = "Board";
+    var d = Model.Date.ToString("yyyy-MM-dd");
+    string PriorityColor(Priority p) => p switch { Priority.High => "#ef4444", Priority.Medium => "#f59e0b", _ => "#94a3b8" };
+
+    var columns = new (string Status, string Title, string Icon, List<DailyPilot.Models.TaskItem> Items)[]
+    {
+        ("Pending",    "To Do",       "bi-circle",        Model.Todo),
+        ("InProgress", "In Progress", "bi-arrow-repeat",  Model.InProgress),
+        ("Completed",  "Done",        "bi-check-circle",  Model.Done),
+    };
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <div>
+        <h2 class="mb-0"><i class="bi bi-kanban"></i> Board</h2>
+        <small class="text-muted">@Model.Date.ToString("dddd, dd MMM yyyy")
+            @if (Model.WorkspaceId is not null) { <span>· <i class="bi bi-people"></i> @Model.WorkspaceName</span> }
+        </small>
+    </div>
+    <div class="btn-group btn-group-sm" role="group" aria-label="View">
+        <a class="btn btn-outline-secondary" asp-action="Index" asp-route-date="@d"><i class="bi bi-list-ul"></i> List</a>
+        <a class="btn btn-outline-secondary active" asp-action="Board" asp-route-date="@d"><i class="bi bi-kanban"></i> Board</a>
+        <a class="btn btn-outline-secondary" asp-action="Matrix" asp-route-date="@d"><i class="bi bi-grid-3x3-gap"></i> Matrix</a>
+    </div>
+</div>
+
+<div class="btn-group btn-group-sm mb-3">
+    <a class="btn btn-outline-secondary" asp-action="Board" asp-route-date="@Model.Date.AddDays(-1).ToString("yyyy-MM-dd")"><i class="bi bi-chevron-left"></i></a>
+    <a class="btn btn-outline-secondary" asp-action="Board">Today</a>
+    <a class="btn btn-outline-secondary" asp-action="Board" asp-route-date="@Model.Date.AddDays(1).ToString("yyyy-MM-dd")"><i class="bi bi-chevron-right"></i></a>
+</div>
+
+<div class="dp-kanban" id="dpKanban">
+    @foreach (var col in columns)
+    {
+        <div class="dp-kan-col" data-status="@col.Status">
+            <div class="dp-kan-head">
+                <span><i class="bi @col.Icon"></i> @col.Title</span>
+                <span class="dp-kan-count badge rounded-pill">@col.Items.Count</span>
+            </div>
+            <div class="dp-kan-drop">
+                @foreach (var t in col.Items)
+                {
+                    var doneCount = t.ChecklistItems.Count(c => c.IsDone);
+                    <div class="dp-kan-card @(t.IsCompleted ? "done" : "")" draggable="true" data-id="@t.Id"
+                         style="--dp-task-accent:@PriorityColor(t.Priority)">
+                        <div class="dp-kan-card-title">
+                            <a asp-action="Edit" asp-route-id="@t.Id">@t.Title</a>
+                        </div>
+                        <div class="d-flex flex-wrap gap-1 mt-2">
+                            <span class="dp-chip bg-body-secondary text-body">@t.Priority</span>
+                            @if (t.Category is not null)
+                            {
+                                <span class="dp-chip text-white" style="background-color:@t.Category.Color">@t.Category.Name</span>
+                            }
+                            @if (t.DueTime is not null) { <span class="dp-chip bg-body-secondary text-body"><i class="bi bi-clock"></i> @t.DueTime.Value.ToString("HH:mm")</span> }
+                            @if (t.ChecklistItems.Count > 0) { <span class="dp-chip bg-body-secondary text-body"><i class="bi bi-list-check"></i> @doneCount/@t.ChecklistItems.Count</span> }
+                            @if (t.ActualMinutes is not null) { <span class="dp-chip bg-body-secondary text-body"><i class="bi bi-stopwatch"></i> @t.ActualMinutes m</span> }
+                        </div>
+                        <div class="dp-kan-card-foot">
+                            <button type="button" class="btn btn-sm btn-outline-primary" data-focus-task="@t.Id" data-focus-title="@t.Title" title="Focus timer"><i class="bi bi-hourglass-split"></i></button>
+                            <a class="btn btn-sm btn-outline-secondary" asp-action="Edit" asp-route-id="@t.Id"><i class="bi bi-pencil"></i></a>
+                        </div>
+                    </div>
+                }
+                <div class="dp-kan-empty text-muted small @(col.Items.Count > 0 ? "d-none" : "")">Drop tasks here</div>
+            </div>
+        </div>
+    }
+</div>
+
+@if (Model.Total == 0)
+{
+    <div class="text-center text-muted py-4">
+        <p class="mb-2">No tasks for this day.</p>
+        <a class="btn btn-primary btn-sm" asp-action="Create" asp-route-date="@d"><i class="bi bi-plus-lg"></i> Add task</a>
+    </div>
+}
+
+@section Scripts {
+    <script src="~/js/kanban.js" asp-append-version="true"></script>
+}

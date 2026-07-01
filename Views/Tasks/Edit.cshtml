@@ -2,6 +2,9 @@
 @{
     ViewData["Title"] = "Edit task";
     var attachments = ViewBag.Attachments as List<TaskAttachment> ?? new List<TaskAttachment>();
+    var checklist = ViewBag.Checklist as List<TaskChecklistItem> ?? new List<TaskChecklistItem>();
+    var comments = ViewBag.Comments as List<TaskComment> ?? new List<TaskComment>();
+    var doneCount = checklist.Count(c => c.IsDone);
     string FormatSize(long bytes) => bytes < 1024 ? $"{bytes} B"
         : bytes < 1024 * 1024 ? $"{bytes / 1024.0:0.#} KB"
         : $"{bytes / (1024.0 * 1024):0.#} MB";
@@ -58,6 +61,106 @@
                 <button type="submit" class="btn btn-outline-primary"><i class="bi bi-upload"></i> Upload</button>
             </div>
             <div class="col-12"><small class="text-muted">Max 10 MB. Documents, images, and zip files allowed.</small></div>
+        </form>
+    </div>
+</div>
+
+<div class="card mt-3">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+            <h5 class="card-title mb-0"><i class="bi bi-list-check"></i> Subtasks
+                @if (checklist.Count > 0) { <span class="text-muted small">@doneCount / @checklist.Count done</span> }
+            </h5>
+            <form asp-action="Breakdown" method="post" class="m-0">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.Id" />
+                <button type="submit" class="btn btn-sm btn-outline-primary"><i class="bi bi-stars"></i> Break it down with AI</button>
+            </form>
+        </div>
+
+        @if (checklist.Count > 0)
+        {
+            <ul class="list-group mb-3 dp-checklist">
+                @foreach (var c in checklist)
+                {
+                    <li class="list-group-item d-flex align-items-center gap-2">
+                        <form asp-action="ToggleChecklistItem" method="post" class="m-0">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="itemId" value="@c.Id" />
+                            <input type="hidden" name="taskId" value="@Model.Id" />
+                            <button type="submit" class="dp-check-btn @(c.IsDone ? "done" : "")" title="Toggle"><i class="bi @(c.IsDone ? "bi-check-square-fill" : "bi-square")"></i></button>
+                        </form>
+                        <span class="flex-grow-1 @(c.IsDone ? "text-decoration-line-through text-muted" : "")">@c.Text</span>
+                        <form asp-action="DeleteChecklistItem" method="post" class="m-0">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="itemId" value="@c.Id" />
+                            <input type="hidden" name="taskId" value="@Model.Id" />
+                            <button type="submit" class="btn btn-sm btn-link text-muted p-0" title="Remove"><i class="bi bi-x-lg"></i></button>
+                        </form>
+                    </li>
+                }
+            </ul>
+        }
+        else
+        {
+            <p class="text-muted mb-3">No subtasks yet. Add steps below, or let AI break the task down for you.</p>
+        }
+
+        <form asp-action="AddChecklistItem" method="post" class="input-group">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="taskId" value="@Model.Id" />
+            <input type="text" name="text" class="form-control" maxlength="300" placeholder="Add a subtask…" required />
+            <button type="submit" class="btn btn-outline-primary"><i class="bi bi-plus-lg"></i> Add</button>
+        </form>
+    </div>
+</div>
+
+<div class="card mt-3">
+    <div class="card-body d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <div>
+            <h5 class="card-title mb-1"><i class="bi bi-stopwatch"></i> Time</h5>
+            <span class="text-muted">
+                Estimated: @(Model.EstimatedMinutes is null ? "—" : Model.EstimatedMinutes + " min")
+                · Actual: <span data-actual-for="@Model.Id">@(ViewBag.ActualMinutes is int am ? am + " min" : "—")</span>
+            </span>
+        </div>
+        <button type="button" class="btn btn-outline-primary" data-focus-task="@Model.Id" data-focus-title="@Model.Title"><i class="bi bi-hourglass-split"></i> Focus timer</button>
+    </div>
+</div>
+
+<div class="card mt-3">
+    <div class="card-body">
+        <h5 class="card-title"><i class="bi bi-chat-left-text"></i> Comments</h5>
+        @if (comments.Count == 0)
+        {
+            <p class="text-muted mb-3">No comments yet.</p>
+        }
+        else
+        {
+            <div class="dp-comments mb-3">
+                @foreach (var c in comments)
+                {
+                    <div class="dp-comment">
+                        <div class="dp-comment-head">
+                            <span class="dp-comment-author"><i class="bi bi-person-circle"></i> @c.AuthorName</span>
+                            <span class="text-muted small">@c.CreatedAt.ToLocalTime().ToString("dd MMM, HH:mm")</span>
+                        </div>
+                        <div class="dp-comment-body">@c.Body</div>
+                    </div>
+                }
+            </div>
+        }
+        <form asp-action="AddComment" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="taskId" value="@Model.Id" />
+            <div class="input-group">
+                <input type="text" name="body" class="form-control" maxlength="2000" placeholder="Write a comment…" required />
+                <button type="submit" class="btn btn-primary"><i class="bi bi-send"></i> Post</button>
+            </div>
+            @if (Model.WorkspaceId is not null)
+            {
+                <small class="text-muted">Tip: mention a teammate with <code>@@username</code> to notify them.</small>
+            }
         </form>
     </div>
 </div>

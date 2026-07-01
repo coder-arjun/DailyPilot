@@ -4,6 +4,7 @@
 @inject UserManager<ApplicationUser> UserManager
 @inject DailyPilot.Services.IWorkspaceService WorkspaceService
 @inject DailyPilot.Services.IWorkspaceContext WorkspaceContext
+@inject DailyPilot.Services.IGamificationService Gamification
 @inject Microsoft.Extensions.Configuration.IConfiguration Config
 @{
     var currentUser = SignInManager.IsSignedIn(User) ? await UserManager.GetUserAsync(User) : null;
@@ -46,6 +47,7 @@
 
     var vapidKey = Config["Push:PublicKey"];
     var speakReminders = currentUser?.SpeakReminders == true;
+    var level = currentUser is not null ? Gamification.Describe(currentUser.Xp) : null;
 }
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="@bsTheme" data-dp-theme="@palette">
@@ -110,6 +112,7 @@
                             @if (signedIn)
                             {
                                 <li class="nav-item"><a class="nav-link @Active("Tasks")" asp-controller="Tasks" asp-action="Index"><i class="bi bi-check2-square"></i> Today</a></li>
+                                <li class="nav-item"><a class="nav-link" asp-controller="Tasks" asp-action="Board"><i class="bi bi-kanban"></i> Board</a></li>
                                 <li class="nav-item"><a class="nav-link @Active("Dashboard")" asp-controller="Dashboard" asp-action="Index"><i class="bi bi-graph-up-arrow"></i> Dashboard</a></li>
                                 <li class="nav-item"><a class="nav-link @Active("Habits")" asp-controller="Habits" asp-action="Index"><i class="bi bi-trophy"></i> Habits</a></li>
                                 <li class="nav-item"><a class="nav-link @Active("Ai")" asp-controller="Ai" asp-action="Index"><i class="bi bi-stars"></i> Assistant</a></li>
@@ -118,8 +121,11 @@
                                 <li class="nav-item dropdown">
                                     <a class="nav-link dropdown-toggle @Active("Workspaces","History")" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-three-dots"></i> More</a>
                                     <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" asp-controller="Tasks" asp-action="Matrix"><i class="bi bi-grid-3x3-gap"></i> Eisenhower Matrix</a></li>
                                         <li><a class="dropdown-item" asp-controller="Workspaces" asp-action="Index"><i class="bi bi-people"></i> Workspaces</a></li>
                                         <li><a class="dropdown-item" asp-controller="History" asp-action="Index"><i class="bi bi-clock-history"></i> History</a></li>
+                                        <li><hr class="dropdown-divider" /></li>
+                                        <li><a class="dropdown-item" href="#" onclick="window.dpOpenPalette&&window.dpOpenPalette();return false;"><i class="bi bi-command"></i> Command palette <kbd class="ms-1">Ctrl K</kbd></a></li>
                                         <li><hr class="dropdown-divider" /></li>
                                         <li><a class="dropdown-item" href="#" id="inviteItem"><i class="bi bi-share"></i> Invite a friend</a></li>
                                         <li><a class="dropdown-item d-none" href="#" id="pwaInstallItem"><i class="bi bi-download"></i> Install app</a></li>
@@ -177,6 +183,14 @@
                                         </ul>
                                     </li>
                                 </ul>
+                            }
+
+                            @if (signedIn && level is not null)
+                            {
+                                <a class="dp-xp-pill" asp-controller="Dashboard" asp-action="Index" title="Level @level.Level · @level.Xp XP (@level.XpToNext XP to next)">
+                                    <span class="dp-xp-lvl">Lv @level.Level</span>
+                                    <span class="dp-xp-bar"><span style="width:@level.ProgressPct%"></span></span>
+                                </a>
                             }
 
                             <ul class="navbar-nav">
@@ -279,6 +293,8 @@
         <script>window.dpSpeakReminders = @(speakReminders ? "true" : "false");</script>
         <script src="~/js/notifications.js" asp-append-version="true"></script>
         <script src="~/js/reminders.js" asp-append-version="true"></script>
+        <script src="~/js/command-palette.js" asp-append-version="true"></script>
+        <script src="~/js/pomodoro.js" asp-append-version="true"></script>
         if (!string.IsNullOrWhiteSpace(vapidKey))
         {
             <script>window.dpVapidKey = '@vapidKey';</script>

@@ -86,6 +86,46 @@ public partial class HeuristicAiTaskAssistant : IAiTaskAssistant
         return Task.FromResult(result);
     }
 
+    // ---------- Task Break-down (subtasks) ----------
+
+    public Task<BreakdownResult> BreakdownAsync(string title, string? notes, int? estimatedMinutes)
+    {
+        var t = (title ?? string.Empty).Trim();
+        var lower = t.ToLowerInvariant();
+        var steps = new List<string>();
+
+        // Keyword-tailored templates for common task shapes.
+        if (Regex.IsMatch(lower, @"\b(email|reply|write to|message)\b"))
+            steps.AddRange(new[] { "Clarify the key point to communicate", $"Draft the {(lower.Contains("email") ? "email" : "message")}", "Proofread and adjust the tone", "Send and note any follow-up" });
+        else if (Regex.IsMatch(lower, @"\b(report|document|doc|proposal|essay|article|blog)\b"))
+            steps.AddRange(new[] { "Outline the structure and key points", "Gather supporting data / references", "Write the first draft", "Edit and refine", "Final review and share" });
+        else if (Regex.IsMatch(lower, @"\b(meeting|call|sync|1:1|standup|interview)\b"))
+            steps.AddRange(new[] { "Set the agenda / goal", "Prepare notes and questions", "Attend and capture decisions", "Send follow-up actions" });
+        else if (Regex.IsMatch(lower, @"\b(bug|fix|issue|error|debug)\b"))
+            steps.AddRange(new[] { "Reproduce the problem", "Identify the root cause", "Implement the fix", "Test and verify", "Deploy / close out" });
+        else if (Regex.IsMatch(lower, @"\b(feature|build|implement|develop|create|design)\b"))
+            steps.AddRange(new[] { "Define requirements and scope", "Sketch the approach / design", $"Build: {t}", "Test it works", "Review and ship" });
+        else if (Regex.IsMatch(lower, @"\b(plan|organize|organise|prepare|arrange|event|trip|party)\b"))
+            steps.AddRange(new[] { "List everything involved", "Decide dates / logistics", "Handle bookings / purchases", "Confirm details", "Final check the day before" });
+        else if (Regex.IsMatch(lower, @"\b(study|learn|revise|research|read)\b"))
+            steps.AddRange(new[] { "Gather the materials", "Skim for the big picture", "Deep-dive the key parts", "Take notes / summarise", "Self-test what you learned" });
+        else if (Regex.IsMatch(lower, @"\b(clean|tidy|declutter|chore|laundry|groceries|shopping)\b"))
+            steps.AddRange(new[] { "List what needs doing", "Gather what you need", $"Do it: {t}", "Put everything away" });
+        else
+            steps.AddRange(new[] { "Clarify the goal and what 'done' looks like", "Gather what you need to start", $"Do the core work: {t}", "Review and double-check", "Wrap up / share the result" });
+
+        // For a big task, add an explicit break/checkpoint step.
+        if (estimatedMinutes is > 90)
+            steps.Insert(Math.Min(2, steps.Count), "Break the work into 25–50 min focus sessions");
+
+        var result = new BreakdownResult
+        {
+            Steps = steps,
+            Summary = $"Broke “{(string.IsNullOrWhiteSpace(t) ? "task" : t)}” into {steps.Count} steps."
+        };
+        return Task.FromResult(result);
+    }
+
     private static DateOnly ParseDate(string lower, DateOnly today, List<string> removals)
     {
         if (Regex.IsMatch(lower, @"\btomorrow\b")) { removals.Add("tomorrow"); return today.AddDays(1); }

@@ -24,10 +24,17 @@
             @if (Model.CarriedForwardCount > 0) { <span class="text-warning">· @Model.CarriedForwardCount carried forward</span> }
         </small>
     </div>
-    <div class="btn-group">
-        <a class="btn btn-outline-secondary" asp-action="Index" asp-route-date="@prev.ToString("yyyy-MM-dd")"><i class="bi bi-chevron-left"></i></a>
-        <a class="btn btn-outline-secondary" asp-action="Index">Today</a>
-        <a class="btn btn-outline-secondary" asp-action="Index" asp-route-date="@next.ToString("yyyy-MM-dd")"><i class="bi bi-chevron-right"></i></a>
+    <div class="d-flex flex-wrap gap-2">
+        <div class="btn-group btn-group-sm" role="group" aria-label="View">
+            <a class="btn btn-outline-secondary active" asp-action="Index" asp-route-date="@Model.Date.ToString("yyyy-MM-dd")"><i class="bi bi-list-ul"></i> List</a>
+            <a class="btn btn-outline-secondary" asp-action="Board" asp-route-date="@Model.Date.ToString("yyyy-MM-dd")"><i class="bi bi-kanban"></i> Board</a>
+            <a class="btn btn-outline-secondary" asp-action="Matrix" asp-route-date="@Model.Date.ToString("yyyy-MM-dd")"><i class="bi bi-grid-3x3-gap"></i> Matrix</a>
+        </div>
+        <div class="btn-group">
+            <a class="btn btn-outline-secondary" asp-action="Index" asp-route-date="@prev.ToString("yyyy-MM-dd")"><i class="bi bi-chevron-left"></i></a>
+            <a class="btn btn-outline-secondary" asp-action="Index">Today</a>
+            <a class="btn btn-outline-secondary" asp-action="Index" asp-route-date="@next.ToString("yyyy-MM-dd")"><i class="bi bi-chevron-right"></i></a>
+        </div>
     </div>
 </div>
 
@@ -141,6 +148,9 @@ else
                                 }
                                 @if (t.DueTime is not null) { <span class="dp-chip bg-body-secondary text-body"><i class="bi bi-clock"></i> @t.DueTime.Value.ToString("HH:mm")</span> }
                                 @if (t.EstimatedMinutes is not null) { <span class="dp-chip bg-body-secondary text-body"><i class="bi bi-hourglass"></i> @t.EstimatedMinutes m</span> }
+                                @{ var doneCount = t.ChecklistItems.Count(c => c.IsDone); }
+                                @if (t.ChecklistItems.Count > 0) { <span class="dp-chip bg-body-secondary text-body"><i class="bi bi-list-check"></i> @doneCount/@t.ChecklistItems.Count</span> }
+                                <span class="dp-chip bg-body-secondary text-body @(t.ActualMinutes is null ? "d-none" : "")" data-actual-for="@t.Id"><i class="bi bi-stopwatch"></i> @(t.ActualMinutes)m actual</span>
                                 @if (t.Recurrence != RecurrencePattern.None) { <span class="dp-chip bg-body-secondary text-body"><i class="bi bi-arrow-repeat"></i> @t.Recurrence</span> }
                                 @if (t.CarryForwardCount > 0) { <span class="dp-chip bg-warning-subtle text-warning-emphasis"><i class="bi bi-arrow-right-circle"></i> ×@t.CarryForwardCount</span> }
                                 @foreach (var tag in t.Tags)
@@ -151,6 +161,10 @@ else
                         </div>
                     </div>
                     <div class="mt-auto pt-3 d-flex justify-content-end gap-1">
+                        @if (!t.IsCompleted)
+                        {
+                            <button type="button" class="btn btn-sm btn-outline-primary" data-focus-task="@t.Id" data-focus-title="@t.Title" title="Focus timer"><i class="bi bi-hourglass-split"></i></button>
+                        }
                         <a class="btn btn-sm btn-outline-secondary" asp-action="Edit" asp-route-id="@t.Id"><i class="bi bi-pencil"></i></a>
                         <form asp-action="Delete" method="post" class="m-0" onsubmit="return confirm('Delete this task?');">
                             @Html.AntiForgeryToken()

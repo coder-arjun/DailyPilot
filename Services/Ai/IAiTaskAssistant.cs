@@ -15,6 +15,9 @@ public interface IAiTaskAssistant
     /// <summary>Natural Language Task Creation.</summary>
     Task<ParsedTaskResult> ParseTaskAsync(string input, IReadOnlyList<string> categories, DateOnly today);
 
+    /// <summary>Break a task into concrete, actionable subtask/checklist steps.</summary>
+    Task<BreakdownResult> BreakdownAsync(string title, string? notes, int? estimatedMinutes);
+
     /// <summary>AI Prioritization Engine.</summary>
     Task<PrioritizationResult> PrioritizeAsync(IReadOnlyList<TaskItem> tasks);
 

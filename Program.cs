@@ -71,6 +71,7 @@ builder.Services.ConfigureApplicationCookie(options =>
 builder.Services.AddSingleton<IDateTimeProvider, SystemDateTimeProvider>();
 builder.Services.AddScoped<ITaskService, TaskService>();
 builder.Services.AddScoped<IStreakService, StreakService>();
+builder.Services.AddScoped<IGamificationService, GamificationService>();
 builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
 builder.Services.AddScoped<ICarryForwardService, CarryForwardService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();

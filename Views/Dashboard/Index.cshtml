@@ -1,7 +1,38 @@
 @model DashboardViewModel
-@{ ViewData["Title"] = "Dashboard"; }
+@{
+    ViewData["Title"] = "Dashboard";
+    var game = ViewBag.Gamification as DailyPilot.Services.GamificationSummary;
+}
 
 <h2 class="mb-3"><i class="bi bi-bar-chart-line"></i> Productivity Dashboard</h2>
+
+@if (game is not null)
+{
+    <div class="card mb-4 dp-level-card">
+        <div class="card-body">
+            <div class="d-flex flex-wrap align-items-center gap-3 mb-2">
+                <div class="dp-level-badge">@game.Level.Level</div>
+                <div class="flex-grow-1">
+                    <div class="d-flex justify-content-between flex-wrap">
+                        <strong>Level @game.Level.Level · @game.Level.Title</strong>
+                        <span class="text-muted small">@game.Level.Xp XP · @game.Level.XpToNext to next</span>
+                    </div>
+                    <div class="dp-xp-track mt-1"><span style="width:@game.Level.ProgressPct%"></span></div>
+                    <div class="text-muted small mt-1">@game.TasksCompleted tasks completed · @game.EarnedBadgeCount / @game.Badges.Count badges earned</div>
+                </div>
+            </div>
+            <div class="dp-badges">
+                @foreach (var b in game.Badges)
+                {
+                    <div class="dp-badge @(b.Earned ? "earned" : "locked")" title="@b.Name — @b.Description">
+                        <i class="bi @b.Icon"></i>
+                        <span>@b.Name</span>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
 
 <div class="row g-3 mb-4">
     <div class="col-6 col-lg-3">

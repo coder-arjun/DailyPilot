@@ -24,6 +24,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<WorkspaceMember> WorkspaceMembers => Set<WorkspaceMember>();
     public DbSet<WorkspaceInvitation> WorkspaceInvitations => Set<WorkspaceInvitation>();
     public DbSet<PushSubscription> PushSubscriptions => Set<PushSubscription>();
+    public DbSet<TaskChecklistItem> TaskChecklistItems => Set<TaskChecklistItem>();
+    public DbSet<TaskComment> TaskComments => Set<TaskComment>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -172,6 +174,29 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
         builder.Entity<AnalyticsSnapshot>(e =>
         {
             e.HasIndex(a => new { a.UserId, a.Date }).IsUnique();
+        });
+
+        builder.Entity<TaskChecklistItem>(e =>
+        {
+            e.HasIndex(c => c.TaskItemId);
+
+            // Single cascade path: User→Task→ChecklistItem.
+            e.HasOne(c => c.TaskItem)
+                .WithMany(t => t.ChecklistItems)
+                .HasForeignKey(c => c.TaskItemId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<TaskComment>(e =>
+        {
+            e.HasIndex(c => c.TaskItemId);
+
+            // Single cascade path: User→Task→Comment. Author UserId is a plain
+            // column (no FK) to avoid a second cascade path to the user.
+            e.HasOne(c => c.TaskItem)
+                .WithMany(t => t.Comments)
+                .HasForeignKey(c => c.TaskItemId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

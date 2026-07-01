@@ -40,6 +40,9 @@ public class ApplicationUser : IdentityUser
     public int LongestStreak { get; set; }
     public DateOnly? LastCompletionDate { get; set; }
 
+    /// <summary>Gamification: lifetime experience points earned from completing tasks and habit check-ins.</summary>
+    public int Xp { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     // Navigation

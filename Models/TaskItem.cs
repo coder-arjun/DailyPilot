@@ -36,6 +36,9 @@ public class TaskItem
     /// <summary>Estimated duration in minutes (PRD §8).</summary>
     public int? EstimatedMinutes { get; set; }
 
+    /// <summary>Actual time spent, accumulated from focus/Pomodoro sessions and manual logging.</summary>
+    public int? ActualMinutes { get; set; }
+
     // --- Recurrence (PRD §5) ---
     public RecurrencePattern Recurrence { get; set; } = RecurrencePattern.None;
 
@@ -70,6 +73,8 @@ public class TaskItem
     public ICollection<TaskHistory> History { get; set; } = new List<TaskHistory>();
     public ICollection<TaskAttachment> Attachments { get; set; } = new List<TaskAttachment>();
     public ICollection<Tag> Tags { get; set; } = new List<Tag>();
+    public ICollection<TaskChecklistItem> ChecklistItems { get; set; } = new List<TaskChecklistItem>();
+    public ICollection<TaskComment> Comments { get; set; } = new List<TaskComment>();
 
     public bool IsCompleted => Status == DailyTaskStatus.Completed;
 }

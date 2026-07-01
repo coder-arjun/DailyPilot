@@ -19,6 +19,13 @@ public class ParsedTaskResult
     public string Summary { get; set; } = string.Empty;
 }
 
+/// <summary>Result of breaking a task into concrete subtasks/checklist steps.</summary>
+public class BreakdownResult
+{
+    public List<string> Steps { get; set; } = new();
+    public string Summary { get; set; } = string.Empty;
+}
+
 public class PrioritizedTask
 {
     public int TaskId { get; set; }

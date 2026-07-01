@@ -97,6 +97,31 @@ public class TaskFormViewModel
     };
 }
 
+/// <summary>Kanban board — tasks grouped by lifecycle status (To Do / In Progress / Done).</summary>
+public class KanbanViewModel
+{
+    public DateOnly Date { get; set; }
+    public int? WorkspaceId { get; set; }
+    public string? WorkspaceName { get; set; }
+    public List<TaskItem> Todo { get; set; } = new();
+    public List<TaskItem> InProgress { get; set; } = new();
+    public List<TaskItem> Done { get; set; } = new();
+    public int Total => Todo.Count + InProgress.Count + Done.Count;
+}
+
+/// <summary>Eisenhower matrix — tasks bucketed by importance (priority) × urgency (deadline/slippage).</summary>
+public class MatrixViewModel
+{
+    public DateOnly Date { get; set; }
+    public int? WorkspaceId { get; set; }
+    public string? WorkspaceName { get; set; }
+    public List<TaskItem> DoFirst { get; set; } = new();       // important + urgent
+    public List<TaskItem> Schedule { get; set; } = new();      // important + not urgent
+    public List<TaskItem> Delegate { get; set; } = new();      // not important + urgent
+    public List<TaskItem> Eliminate { get; set; } = new();     // not important + not urgent
+    public int Total => DoFirst.Count + Schedule.Count + Delegate.Count + Eliminate.Count;
+}
+
 /// <summary>Today / day view of tasks with filters (PRD §5 Smart Filters).</summary>
 public class TodayViewModel
 {

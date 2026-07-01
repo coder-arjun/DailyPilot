@@ -13,12 +13,15 @@ public class TaskService : ITaskService
     private readonly ApplicationDbContext _db;
     private readonly IDateTimeProvider _clock;
     private readonly IStreakService _streaks;
+    private readonly IGamificationService _gamification;
 
-    public TaskService(ApplicationDbContext db, IDateTimeProvider clock, IStreakService streaks)
+    public TaskService(ApplicationDbContext db, IDateTimeProvider clock, IStreakService streaks,
+        IGamificationService gamification)
     {
         _db = db;
         _clock = clock;
         _streaks = streaks;
+        _gamification = gamification;
     }
 
     public Task<DateOnly> GetLocalTodayAsync(ApplicationUser user)
@@ -29,6 +32,7 @@ public class TaskService : ITaskService
         return await _db.Tasks
             .Include(t => t.Category)
             .Include(t => t.Tags)
+            .Include(t => t.ChecklistItems)
             .Where(t => t.UserId == userId && t.PlannedDate == date && t.WorkspaceId == workspaceId)
             .OrderBy(t => t.Status == DailyTaskStatus.Completed)
             .ThenBy(t => t.SortOrder)
@@ -42,6 +46,7 @@ public class TaskService : ITaskService
         return await _db.Tasks
             .Include(t => t.Category)
             .Include(t => t.Tags)
+            .Include(t => t.ChecklistItems.OrderBy(c => c.SortOrder))
             .FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId);
     }
 
@@ -120,6 +125,121 @@ public class TaskService : ITaskService
 
         await _db.SaveChangesAsync();
         await _streaks.RecalculateAsync(userId);
+        if (task.Status == DailyTaskStatus.Completed)
+            await _gamification.AwardAsync(task.UserId, _gamification.XpForTask(task));
+        return true;
+    }
+
+    public async Task<bool> SetStatusAsync(string userId, int id, DailyTaskStatus status)
+    {
+        var task = await _db.Tasks.FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId);
+        if (task is null) return false;
+        if (task.Status == status) return true;
+
+        var wasCompleted = task.Status == DailyTaskStatus.Completed;
+        task.Status = status;
+
+        if (status == DailyTaskStatus.Completed)
+        {
+            task.CompletedAt = _clock.UtcNow;
+            AddHistory(task, "Completed", null);
+        }
+        else
+        {
+            task.CompletedAt = null;
+            if (status == DailyTaskStatus.InProgress) { task.ReminderFiredOn = null; AddHistory(task, "Started", null); }
+            else if (wasCompleted) { task.ReminderFiredOn = null; AddHistory(task, "Reopened", null); }
+        }
+
+        await _db.SaveChangesAsync();
+        await _streaks.RecalculateAsync(userId);
+        if (status == DailyTaskStatus.Completed && !wasCompleted)
+            await _gamification.AwardAsync(task.UserId, _gamification.XpForTask(task));
+        return true;
+    }
+
+    public async Task<int?> LogTimeAsync(string userId, int id, int minutes)
+    {
+        if (minutes <= 0) return null;
+        var task = await _db.Tasks.FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId);
+        if (task is null) return null;
+        task.ActualMinutes = (task.ActualMinutes ?? 0) + minutes;
+        await _db.SaveChangesAsync();
+        return task.ActualMinutes;
+    }
+
+    // --- Checklist / subtasks ---
+
+    public async Task<TaskChecklistItem?> AddChecklistItemAsync(string userId, int taskId, string text)
+    {
+        text = (text ?? string.Empty).Trim();
+        if (text.Length == 0) return null;
+        if (text.Length > 300) text = text[..300];
+
+        var task = await _db.Tasks.FirstOrDefaultAsync(t => t.Id == taskId && t.UserId == userId);
+        if (task is null) return null;
+
+        var nextOrder = await _db.TaskChecklistItems.Where(c => c.TaskItemId == taskId)
+            .Select(c => (int?)c.SortOrder).MaxAsync() ?? -1;
+
+        var item = new TaskChecklistItem
+        {
+            TaskItemId = taskId,
+            Text = text,
+            SortOrder = nextOrder + 1,
+            CreatedAt = _clock.UtcNow
+        };
+        _db.TaskChecklistItems.Add(item);
+        await _db.SaveChangesAsync();
+        return item;
+    }
+
+    public async Task<int> AddChecklistItemsAsync(string userId, int taskId, IEnumerable<string> texts)
+    {
+        var task = await _db.Tasks.FirstOrDefaultAsync(t => t.Id == taskId && t.UserId == userId);
+        if (task is null) return 0;
+
+        var nextOrder = (await _db.TaskChecklistItems.Where(c => c.TaskItemId == taskId)
+            .Select(c => (int?)c.SortOrder).MaxAsync() ?? -1) + 1;
+
+        int added = 0;
+        foreach (var raw in texts)
+        {
+            var text = (raw ?? string.Empty).Trim();
+            if (text.Length == 0) continue;
+            if (text.Length > 300) text = text[..300];
+            _db.TaskChecklistItems.Add(new TaskChecklistItem
+            {
+                TaskItemId = taskId,
+                Text = text,
+                SortOrder = nextOrder++,
+                CreatedAt = _clock.UtcNow
+            });
+            added++;
+        }
+        if (added > 0) await _db.SaveChangesAsync();
+        return added;
+    }
+
+    public async Task<bool> ToggleChecklistItemAsync(string userId, int itemId)
+    {
+        var item = await _db.TaskChecklistItems
+            .Include(c => c.TaskItem)
+            .FirstOrDefaultAsync(c => c.Id == itemId && c.TaskItem!.UserId == userId);
+        if (item is null) return false;
+        item.IsDone = !item.IsDone;
+        await _db.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> DeleteChecklistItemAsync(string userId, int itemId)
+    {
+        var item = await _db.TaskChecklistItems
+            .Include(c => c.TaskItem)
+            .FirstOrDefaultAsync(c => c.Id == itemId && c.TaskItem!.UserId == userId);
+        if (item is null) return false;
+        _db.TaskChecklistItems.Remove(item);
+        await _db.SaveChangesAsync();
         return true;
     }
 

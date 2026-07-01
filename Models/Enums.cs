@@ -22,7 +22,8 @@ public enum DailyTaskStatus
 {
     Pending = 0,
     Completed = 1,
-    CarriedForward = 2
+    CarriedForward = 2,
+    InProgress = 3
 }
 
 /// <summary>Recurrence cadence for recurring tasks (PRD §5).</summary>
