@@ -126,7 +126,10 @@ public class TaskService : ITaskService
         await _db.SaveChangesAsync();
         await _streaks.RecalculateAsync(userId);
         if (task.Status == DailyTaskStatus.Completed)
+        {
             await _gamification.AwardAsync(task.UserId, _gamification.XpForTask(task));
+            await MaterialiseNextOccurrenceAsync(task);
+        }
         return true;
     }
 
@@ -154,8 +157,65 @@ public class TaskService : ITaskService
         await _db.SaveChangesAsync();
         await _streaks.RecalculateAsync(userId);
         if (status == DailyTaskStatus.Completed && !wasCompleted)
+        {
             await _gamification.AwardAsync(task.UserId, _gamification.XpForTask(task));
+            await MaterialiseNextOccurrenceAsync(task);
+        }
         return true;
+    }
+
+    /// <summary>
+    /// When a recurring task is completed, immediately create its next occurrence so
+    /// the upcoming instance is visible right away (e.g. tomorrow for a Daily task),
+    /// rather than waiting for the day to roll over. No-op for non-recurring tasks or
+    /// if the next instance already exists.
+    /// </summary>
+    private async Task MaterialiseNextOccurrenceAsync(TaskItem task)
+    {
+        if (task.Recurrence == RecurrencePattern.None) return;
+        var next = NextOccurrence(task.Recurrence, task.PlannedDate);
+        if (next is null) return;
+
+        var exists = await _db.Tasks.AnyAsync(t => t.UserId == task.UserId
+            && t.Title == task.Title && t.PlannedDate == next.Value);
+        if (exists) return;
+
+        _db.Tasks.Add(new TaskItem
+        {
+            UserId = task.UserId,
+            Title = task.Title,
+            Notes = task.Notes,
+            PlannedDate = next.Value,
+            OriginalDate = next.Value,
+            DueTime = task.DueTime,
+            ReminderTime = task.ReminderTime,
+            Priority = task.Priority,
+            EnergyLevel = task.EnergyLevel,
+            EstimatedMinutes = task.EstimatedMinutes,
+            Recurrence = task.Recurrence,
+            CategoryId = task.CategoryId,
+            WorkspaceId = task.WorkspaceId,
+            CreatedById = task.CreatedById,
+            Status = DailyTaskStatus.Pending,
+            CreatedAt = _clock.UtcNow
+        });
+        await _db.SaveChangesAsync();
+    }
+
+    private static DateOnly? NextOccurrence(RecurrencePattern pattern, DateOnly from) => pattern switch
+    {
+        RecurrencePattern.Daily => from.AddDays(1),
+        RecurrencePattern.Weekly => from.AddDays(7),
+        RecurrencePattern.Monthly => from.AddMonths(1),
+        RecurrencePattern.Weekdays => NextWeekday(from),
+        _ => null
+    };
+
+    private static DateOnly NextWeekday(DateOnly d)
+    {
+        var n = d.AddDays(1);
+        while (n.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday) n = n.AddDays(1);
+        return n;
     }
 
     public async Task<int?> LogTimeAsync(string userId, int id, int minutes)
