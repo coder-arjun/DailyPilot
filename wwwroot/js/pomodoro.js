@@ -6,7 +6,11 @@
 
     let modal, display, label, startBtn, resetBtn, closeBtn, ring;
     let taskId = null, taskTitle = '';
-    let totalSec = 25 * 60, remaining = totalSec, timer = null, running = false, elapsedSec = 0;
+    // Wall-clock driven: `endAtMs` is when the countdown hits zero while running.
+    // Deriving `remaining` from Date.now() (not a per-second counter) keeps the timer
+    // accurate even when the phone sleeps or the tab is backgrounded and setInterval is
+    // throttled/suspended.
+    let totalSec = 25 * 60, remaining = totalSec, timer = null, running = false, endAtMs = 0;
 
     function build() {
         modal = document.createElement('div');
@@ -61,41 +65,48 @@
         ring.style.strokeDashoffset = C * (1 - remaining / totalSec);
     }
 
+    function syncRemaining() {
+        if (running) remaining = Math.max(0, Math.round((endAtMs - Date.now()) / 1000));
+    }
+
     function tick() {
-        remaining--;
-        elapsedSec++;
+        syncRemaining();
         paint();
-        if (remaining <= 0) {
-            finish(true);
-        }
+        if (running && Date.now() >= endAtMs) finish(true);
     }
 
     function toggle() {
         if (running) { pause(); } else { start(); }
     }
     function start() {
+        if (remaining <= 0) remaining = totalSec;
         running = true;
+        endAtMs = Date.now() + remaining * 1000;     // absolute target time
         startBtn.innerHTML = '<i class="bi bi-pause-fill"></i> Pause';
-        timer = setInterval(tick, 1000);
+        clearInterval(timer);
+        timer = setInterval(tick, 500);
     }
     function pause() {
+        syncRemaining();                             // freeze at real elapsed
         running = false;
         startBtn.innerHTML = '<i class="bi bi-play-fill"></i> Resume';
         clearInterval(timer); timer = null;
     }
     function stop(logIt) {
+        syncRemaining();
         running = false;
         clearInterval(timer); timer = null;
         startBtn.innerHTML = '<i class="bi bi-play-fill"></i> Start';
         if (logIt) logElapsed();
-        elapsedSec = 0;
     }
 
     function finish(completed) {
-        stop(false);
-        logElapsed();
-        elapsedSec = 0;
-        remaining = totalSec; paint();
+        remaining = 0;
+        running = false;
+        clearInterval(timer); timer = null;
+        startBtn.innerHTML = '<i class="bi bi-play-fill"></i> Start';
+        logElapsed();                                // logs the full session (totalSec - 0)
+        remaining = totalSec; paint();               // reset display for the next run
         if (completed) {
             try { new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=').play(); } catch (e) { }
             if ('Notification' in window && Notification.permission === 'granted') {
@@ -107,7 +118,10 @@
     }
 
     function logElapsed() {
-        const mins = Math.round(elapsedSec / 60);
+        // Focus time spent = session length minus what's left (clamped). This reflects
+        // real elapsed wall-clock time — including any period the phone was asleep.
+        const spentSec = Math.max(0, Math.min(totalSec, totalSec - remaining));
+        const mins = Math.round(spentSec / 60);
         if (!taskId || mins <= 0) return;
         const body = new URLSearchParams();
         body.set('id', taskId); body.set('minutes', mins);
@@ -133,9 +147,17 @@
         modal.classList.add('show');
     }
     function hide() {
-        if (running || elapsedSec > 0) stop(true);
+        stop(true);                                  // logs any un-logged focus time (no-op if none)
         if (modal) modal.classList.remove('show');
     }
+
+    // When the tab/app returns to the foreground (e.g. the phone wakes), immediately
+    // re-sync from the wall clock so the countdown reflects real elapsed time and
+    // completes if the session finished while we were away.
+    document.addEventListener('visibilitychange', function () {
+        if (!document.hidden && running) tick();
+    });
+    window.addEventListener('pageshow', function () { if (running) tick(); });
 
     // Launch from any [data-focus-task] button.
     document.addEventListener('click', function (e) {
