@@ -10,12 +10,12 @@
     function showToast(message) {
         if (!container) return;
         const el = document.createElement("div");
-        el.className = "toast align-items-center text-bg-primary border-0";
+        el.className = "toast align-items-center dp-toast-notify border-0";
         el.setAttribute("role", "alert");
         el.innerHTML =
             '<div class="d-flex">' +
             '<div class="toast-body">' + message + '</div>' +
-            '<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>' +
+            '<button type="button" class="dp-toast-x me-2 m-auto" data-bs-dismiss="toast" aria-label="Close">&times;</button>' +
             '</div>';
         container.appendChild(el);
         const toast = new bootstrap.Toast(el, { delay: 4000 });
