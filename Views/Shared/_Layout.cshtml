@@ -10,32 +10,11 @@
     var currentUser = SignInManager.IsSignedIn(User) ? await UserManager.GetUserAsync(User) : null;
     var signedIn = SignInManager.IsSignedIn(User);
 
-    // Theme system (5 premium palettes, switchable in the UI).
-    var themes = new (string Key, string Name, string Swatch, string Bs)[]
-    {
-        ("obsidian",    "Obsidian & Champagne",     "#D4AF37", "dark"),
-        ("nordic",      "Nordic Minimalist",        "#0071E3", "light"),
-        ("emerald",     "Cyber-Renaissance",        "#00FFCC", "dark"),
-        ("ultraviolet", "Deep Space Ultraviolet",   "#8B5CF6", "dark"),
-        ("titanium",    "Slate & Titanium",         "#E2E8F0", "dark"),
-    };
-    var paletteCookie = ViewContext.HttpContext.Request.Cookies["dp_palette"];
-    string palette;
-    if (signedIn && currentUser is not null && themes.Any(t => t.Key == currentUser.Theme))
-        palette = currentUser.Theme;                       // profile preference wins (cross-device)
-    else if (themes.Any(t => t.Key == paletteCookie))
-        palette = paletteCookie!;                          // guest / cookie fallback
-    else
-        palette = "obsidian";
-    var bsTheme = themes.First(t => t.Key == palette).Bs;
-    var themeColor = palette switch
-    {
-        "nordic" => "#FBFBFD",
-        "emerald" => "#060F0E",
-        "ultraviolet" => "#03001C",
-        "titanium" => "#121214",
-        _ => "#0B0C10"
-    };
+    // Slate & Titanium is the single, permanent theme (theme switching removed).
+    const string palette = "titanium";
+    const string bsTheme = "dark";
+    const string themeColor = "#121214";
+    var baseUrl = $"{Context.Request.Scheme}://{Context.Request.Host}";
 
     var myWorkspaces = currentUser is not null ? await WorkspaceService.GetUserWorkspacesAsync(currentUser.Id) : new();
     var currentWsId = WorkspaceContext.CurrentWorkspaceId;
@@ -61,8 +40,22 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="DayPilot" />
-    <link rel="apple-touch-icon" href="~/icons/favicon-@(palette).png" />
-    <link rel="icon" type="image/png" id="dp-favicon" href="~/icons/favicon-@(palette).png" />
+    <link rel="apple-touch-icon" href="~/icons/icon-192.png" />
+    <link rel="icon" type="image/png" id="dp-favicon" href="~/icons/favicon-titanium.png" />
+
+    @* Link preview (WhatsApp / social share of the invite) — Slate & Titanium logo *@
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="DayPilot" />
+    <meta property="og:title" content="DayPilot — Plan. Complete. Move Forward." />
+    <meta property="og:description" content="Your daily task companion — auto carry-forward, reminders, habits, and an AI coach." />
+    <meta property="og:url" content="@baseUrl" />
+    <meta property="og:image" content="@(baseUrl)/icons/icon-512.png" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="DayPilot — Plan. Complete. Move Forward." />
+    <meta name="twitter:description" content="Your daily task companion — auto carry-forward, reminders, habits, and an AI coach." />
+    <meta name="twitter:image" content="@(baseUrl)/icons/icon-512.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet" />
@@ -194,26 +187,6 @@
                             }
 
                             <ul class="navbar-nav">
-                                <li class="nav-item dropdown">
-                                    <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                        <i class="bi bi-palette"></i><span class="d-lg-none">Theme</span>
-                                    </a>
-                                    <ul class="dropdown-menu dropdown-menu-end">
-                                        <li><h6 class="dropdown-header">Choose a theme</h6></li>
-                                        @foreach (var t in themes)
-                                        {
-                                            <li>
-                                                <button type="button" class="dropdown-item d-flex align-items-center gap-2 theme-option @(palette == t.Key ? "active" : "")"
-                                                        data-theme-set="@t.Key" data-theme-bs="@t.Bs">
-                                                    <span class="dp-swatch" style="background:@t.Swatch"></span>
-                                                    <span>@t.Name</span>
-                                                    <i class="bi bi-check2 ms-auto @(palette == t.Key ? "" : "invisible")"></i>
-                                                </button>
-                                            </li>
-                                        }
-                                    </ul>
-                                </li>
-
                                 @if (signedIn)
                                 {
                                     <li class="nav-item dropdown">
