@@ -111,8 +111,9 @@
                                 <li class="nav-item"><a class="nav-link @Active("Ai")" asp-controller="Ai" asp-action="Index"><i class="bi bi-stars"></i> Assistant</a></li>
                                 <li class="nav-item"><a class="nav-link @Active("Calendar")" asp-controller="Calendar" asp-action="Index"><i class="bi bi-calendar3"></i> Calendar</a></li>
                                 <li class="nav-item dropdown">
-                                    <a class="nav-link dropdown-toggle @Active("Workspaces","History","Categories")" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-three-dots"></i> More</a>
+                                    <a class="nav-link dropdown-toggle @Active("Workspaces","History","Categories","Invitations")" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-three-dots"></i> More</a>
                                     <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item @Active("Invitations")" asp-controller="Invitations" asp-action="Index"><i class="bi bi-envelope-paper-heart"></i> Invitations</a></li>
                                         <li><a class="dropdown-item" asp-controller="Tasks" asp-action="Matrix"><i class="bi bi-grid-3x3-gap"></i> Eisenhower Matrix</a></li>
                                         <li><a class="dropdown-item @Active("Categories")" asp-controller="Categories" asp-action="Index"><i class="bi bi-tags"></i> Categories</a></li>
                                         <li><a class="dropdown-item" asp-controller="Workspaces" asp-action="Index"><i class="bi bi-people"></i> Workspaces</a></li>

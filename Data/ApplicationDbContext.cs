@@ -31,6 +31,10 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IDataPro
     public DbSet<TaskChecklistItem> TaskChecklistItems => Set<TaskChecklistItem>();
     public DbSet<TaskComment> TaskComments => Set<TaskComment>();
 
+    public DbSet<EventType> EventTypes => Set<EventType>();
+    public DbSet<InviteList> InviteLists => Set<InviteList>();
+    public DbSet<Invitee> Invitees => Set<Invitee>();
+
     /// <summary>Data Protection key ring (auth-cookie encryption keys), persisted in dbo.</summary>
     public DbSet<Microsoft.AspNetCore.DataProtection.EntityFrameworkCore.DataProtectionKey> DataProtectionKeys => Set<Microsoft.AspNetCore.DataProtection.EntityFrameworkCore.DataProtectionKey>();
 
@@ -203,6 +207,36 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IDataPro
             e.HasOne(c => c.TaskItem)
                 .WithMany(t => t.Comments)
                 .HasForeignKey(c => c.TaskItemId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<EventType>(e =>
+        {
+            e.HasIndex(x => new { x.UserId, x.Name });
+            e.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<InviteList>(e =>
+        {
+            e.HasIndex(x => x.UserId);
+            // InviteList holds an EventName snapshot (no FK to EventType), so deleting
+            // an event type never orphans a list and there's no extra cascade path.
+            e.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<Invitee>(e =>
+        {
+            e.HasIndex(x => x.InviteListId);
+            // Single cascade path: User→InviteList→Invitee.
+            e.HasOne(x => x.InviteList)
+                .WithMany(l => l.Invitees)
+                .HasForeignKey(x => x.InviteListId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
     }

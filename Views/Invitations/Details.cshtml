@@ -1,0 +1,99 @@
+@model InviteListDetailsViewModel
+@{ ViewData["Title"] = Model.List.GroupName; }
+
+<div class="d-flex flex-wrap justify-content-between align-items-start mb-3 gap-2">
+    <div class="d-flex align-items-center gap-3">
+        <div class="dp-invite-badge lg"><i class="bi bi-@Model.List.EventIcon"></i></div>
+        <div>
+            <div class="text-muted small text-uppercase" style="letter-spacing:.06em">@Model.List.EventName</div>
+            <h2 class="mb-0">@Model.List.GroupName</h2>
+        </div>
+    </div>
+    <a class="btn btn-outline-secondary btn-sm" asp-action="Index"><i class="bi bi-chevron-left"></i> All lists</a>
+</div>
+
+<div class="card mb-3"><div class="card-body py-3">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+        <span><strong>@Model.Invited</strong> of <strong>@Model.Total</strong> invited</span>
+        <span class="text-muted small">@Model.Pending still to invite</span>
+    </div>
+    <div class="dp-xp-track" style="height:10px"><span style="width:@Model.Percent%"></span></div>
+</div></div>
+
+<div class="card mb-3"><div class="card-body">
+    <form asp-action="AddInvitee" method="post" class="row g-2 align-items-end">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="listId" value="@Model.List.Id" />
+        <div class="col-md-6">
+            <label class="form-label small text-muted">Add a person</label>
+            <input name="name" class="form-control" maxlength="120" placeholder="Full name" required autofocus />
+        </div>
+        <div class="col-md-4">
+            <label class="form-label small text-muted">Phone / email <span class="text-muted">(optional)</span></label>
+            <input name="contact" class="form-control" maxlength="60" placeholder="Optional" />
+        </div>
+        <div class="col-md-2 d-grid">
+            <button type="submit" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Add</button>
+        </div>
+    </form>
+</div></div>
+
+@if (!Model.Invitees.Any())
+{
+    <div class="text-center text-muted py-5">
+        <i class="bi bi-person-plus" style="font-size:3rem;"></i>
+        <p class="mt-2">No one on this list yet. Add everyone above so you don't miss anybody.</p>
+    </div>
+}
+else
+{
+    <div class="card"><div class="table-responsive">
+        <table class="table dp-invite-table align-middle mb-0">
+            <thead>
+                <tr>
+                    <th style="width:52px" class="text-center">Invited</th>
+                    <th>Name</th>
+                    <th class="d-none d-md-table-cell">Phone / email</th>
+                    <th style="width:120px">Status</th>
+                    <th style="width:56px"></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var p in Model.Invitees)
+                {
+                    <tr class="@(p.IsInvited ? "is-invited" : "is-pending")">
+                        <td class="text-center">
+                            <form asp-action="ToggleInvited" method="post" class="m-0 d-inline">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@p.Id" />
+                                <button type="submit" class="dp-check-btn @(p.IsInvited ? "done" : "")" title="Toggle invited">
+                                    <i class="bi @(p.IsInvited ? "bi-check-square-fill" : "bi-square")"></i>
+                                </button>
+                            </form>
+                        </td>
+                        <td class="fw-medium @(p.IsInvited ? "text-muted" : "")">@p.Name</td>
+                        <td class="d-none d-md-table-cell text-muted">@(string.IsNullOrWhiteSpace(p.Contact) ? "—" : p.Contact)</td>
+                        <td>
+                            @if (p.IsInvited)
+                            {
+                                <span class="badge rounded-pill dp-pill-invited"><i class="bi bi-check-lg"></i> Invited</span>
+                            }
+                            else
+                            {
+                                <span class="badge rounded-pill dp-pill-pending"><i class="bi bi-hourglass"></i> Pending</span>
+                            }
+                        </td>
+                        <td class="text-end">
+                            <form asp-action="DeleteInvitee" method="post" class="m-0" onsubmit="return confirm('Remove @p.Name?');">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@p.Id" />
+                                <button type="submit" class="btn btn-sm btn-link text-muted p-0"><i class="bi bi-x-lg"></i></button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div></div>
+    <p class="text-muted small mt-2"><i class="bi bi-info-circle"></i> People still to invite are listed first.</p>
+}

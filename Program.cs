@@ -70,6 +70,18 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.SlidingExpiration = true;
     options.LoginPath = "/Identity/Account/Login";
     options.AccessDeniedPath = "/Identity/Account/AccessDenied";
+
+    // Force EVERY sign-in to be persistent (30 days), even without "Remember me".
+    // Otherwise a non-persistent login is a session cookie that the PWA drops when
+    // it's closed — so tapping a reminder reopens the app logged-out and lands on the
+    // login page instead of the task. A persistent cookie keeps the PWA signed in.
+    options.Events ??= new Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationEvents();
+    options.Events.OnSigningIn = context =>
+    {
+        context.Properties.IsPersistent = true;
+        context.Properties.ExpiresUtc = DateTimeOffset.UtcNow.AddDays(30);
+        return Task.CompletedTask;
+    };
 });
 
 // Re-validate the security stamp every 30 min (not every request) so routine use
