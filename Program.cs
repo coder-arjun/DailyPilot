@@ -210,7 +210,23 @@ app.UseSecurityHeaders();
 
 // Serve raw files from wwwroot (not the fingerprinted static-asset manifest) so that
 // file-by-file FTP deploys of CSS/JS/icons take effect immediately.
-app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+    {
+        var name = ctx.File.Name;
+        // The PWA manifest and service worker must never be cached, or the browser
+        // keeps reading an old manifest that points at old icons — so a redesigned
+        // app icon never shows even after reinstall. Always revalidate these two.
+        if (name.EndsWith(".webmanifest", StringComparison.OrdinalIgnoreCase) ||
+            name.Equals("sw.js", StringComparison.OrdinalIgnoreCase))
+        {
+            ctx.Context.Response.Headers.CacheControl = "no-cache, no-store, must-revalidate";
+            ctx.Context.Response.Headers.Pragma = "no-cache";
+            ctx.Context.Response.Headers.Expires = "0";
+        }
+    }
+});
 
 app.UseRouting();
 

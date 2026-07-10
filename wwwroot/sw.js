@@ -1,8 +1,7 @@
 // DayPilot service worker — app-shell caching + offline fallback (PRD Phase 3 / PWA).
-const CACHE = 'daypilot-v15';
+const CACHE = 'daypilot-v16';
 const APP_SHELL = [
     '/offline.html',
-    '/manifest.webmanifest',
     '/css/site.css',
     '/js/site.js',
     '/lib/bootstrap/dist/css/bootstrap.min.css',
@@ -83,6 +82,10 @@ self.addEventListener('fetch', event => {
     // stale antiforgery token/cookie, which makes the first PWA login fail. Always go
     // straight to the network for Identity so the token and cookie are fresh.
     if (url.pathname.startsWith('/Identity/')) return;
+
+    // Never cache the PWA manifest — a stale manifest keeps pointing at old icons, so a
+    // redesigned app icon never shows. Always fetch it fresh from the network.
+    if (url.pathname === '/manifest.webmanifest') return;
 
     // Navigations: network-first, fall back to the cached offline page.
     if (req.mode === 'navigate') {
