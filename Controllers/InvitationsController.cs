@@ -156,6 +156,31 @@ public class InvitationsController : Controller
         return RedirectToAction(nameof(Details), new { id = invitee.InviteListId });
     }
 
+    // POST /Invitations/Confirm — save the whole grid's invited state in one action.
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Confirm(int listId, int[]? invitedIds)
+    {
+        var list = await _db.InviteLists
+            .Include(l => l.Invitees)
+            .FirstOrDefaultAsync(l => l.Id == listId && l.UserId == UserId);
+        if (list is null) return NotFound();
+
+        var set = (invitedIds ?? Array.Empty<int>()).ToHashSet();
+        foreach (var p in list.Invitees)
+        {
+            var invited = set.Contains(p.Id);
+            if (p.IsInvited != invited)
+            {
+                p.IsInvited = invited;
+                p.InvitedAt = invited ? DateTime.UtcNow : null;
+            }
+        }
+        await _db.SaveChangesAsync();
+        TempData["Success"] = $"Saved — {set.Count} of {list.Invitees.Count} marked as invited.";
+        return RedirectToAction(nameof(Details), new { id = listId });
+    }
+
     // POST /Invitations/DeleteInvitee
     [HttpPost]
     [ValidateAntiForgeryToken]

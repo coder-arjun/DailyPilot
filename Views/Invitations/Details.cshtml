@@ -47,53 +47,71 @@
 }
 else
 {
-    <div class="card"><div class="table-responsive">
-        <table class="table dp-invite-table align-middle mb-0">
-            <thead>
-                <tr>
-                    <th style="width:52px" class="text-center">Invited</th>
-                    <th>Name</th>
-                    <th class="d-none d-md-table-cell">Phone / email</th>
-                    <th style="width:120px">Status</th>
-                    <th style="width:56px"></th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var p in Model.Invitees)
-                {
-                    <tr class="@(p.IsInvited ? "is-invited" : "is-pending")">
-                        <td class="text-center">
-                            <form asp-action="ToggleInvited" method="post" class="m-0 d-inline">
-                                @Html.AntiForgeryToken()
-                                <input type="hidden" name="id" value="@p.Id" />
-                                <button type="submit" class="dp-check-btn @(p.IsInvited ? "done" : "")" title="Toggle invited">
-                                    <i class="bi @(p.IsInvited ? "bi-check-square-fill" : "bi-square")"></i>
-                                </button>
-                            </form>
-                        </td>
-                        <td class="fw-medium @(p.IsInvited ? "text-muted" : "")">@p.Name</td>
-                        <td class="d-none d-md-table-cell text-muted">@(string.IsNullOrWhiteSpace(p.Contact) ? "—" : p.Contact)</td>
-                        <td>
-                            @if (p.IsInvited)
-                            {
-                                <span class="badge rounded-pill dp-pill-invited"><i class="bi bi-check-lg"></i> Invited</span>
-                            }
-                            else
-                            {
-                                <span class="badge rounded-pill dp-pill-pending"><i class="bi bi-hourglass"></i> Pending</span>
-                            }
-                        </td>
-                        <td class="text-end">
-                            <form asp-action="DeleteInvitee" method="post" class="m-0" onsubmit="return confirm('Remove @p.Name?');">
-                                @Html.AntiForgeryToken()
-                                <input type="hidden" name="id" value="@p.Id" />
-                                <button type="submit" class="btn btn-sm btn-link text-muted p-0"><i class="bi bi-x-lg"></i></button>
-                            </form>
-                        </td>
+    <form asp-action="Confirm" method="post" id="inviteConfirmForm">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="listId" value="@Model.List.Id" />
+        <div class="card"><div class="table-responsive">
+            <table class="table dp-invite-table align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th style="width:52px" class="text-center">
+                            <input class="form-check-input" type="checkbox" id="dpSelAll" title="Select everyone" />
+                        </th>
+                        <th>Name</th>
+                        <th class="d-none d-md-table-cell">Phone / email</th>
+                        <th style="width:120px">Status</th>
+                        <th style="width:48px"></th>
                     </tr>
-                }
-            </tbody>
-        </table>
-    </div></div>
-    <p class="text-muted small mt-2"><i class="bi bi-info-circle"></i> People still to invite are listed first.</p>
+                </thead>
+                <tbody>
+                    @foreach (var p in Model.Invitees)
+                    {
+                        <tr class="@(p.IsInvited ? "is-invited" : "is-pending")">
+                            <td class="text-center">
+                                <input class="form-check-input dp-inv-check" type="checkbox" name="invitedIds" value="@p.Id" @(p.IsInvited ? "checked" : "") />
+                            </td>
+                            <td class="fw-medium">@p.Name</td>
+                            <td class="d-none d-md-table-cell text-muted">@(string.IsNullOrWhiteSpace(p.Contact) ? "—" : p.Contact)</td>
+                            <td>
+                                @if (p.IsInvited)
+                                {
+                                    <span class="badge rounded-pill dp-pill-invited"><i class="bi bi-check-lg"></i> Invited</span>
+                                }
+                                else
+                                {
+                                    <span class="badge rounded-pill dp-pill-pending"><i class="bi bi-hourglass"></i> Pending</span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                <button type="submit" formaction="@Url.Action("DeleteInvitee")" formnovalidate
+                                        name="id" value="@p.Id" class="btn btn-sm btn-link text-muted p-0"
+                                        onclick="return confirm('Remove this person?');" title="Remove">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div></div>
+
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3">
+            <span class="text-muted small"><i class="bi bi-info-circle"></i> Tick everyone you've invited, then confirm. People still to invite are listed first.</span>
+            <button type="submit" class="btn btn-primary btn-lg px-4"><i class="bi bi-check2-circle"></i> Confirm invitations</button>
+        </div>
+    </form>
+}
+
+@section Scripts {
+    <script>
+        (function () {
+            var all = document.getElementById('dpSelAll');
+            var boxes = document.querySelectorAll('.dp-inv-check');
+            if (!all || !boxes.length) return;
+            function sync() { all.checked = [...boxes].every(b => b.checked); }
+            all.addEventListener('change', function () { boxes.forEach(b => b.checked = all.checked); });
+            boxes.forEach(b => b.addEventListener('change', sync));
+            sync();
+        })();
+    </script>
 }

@@ -1,5 +1,5 @@
 // DayPilot service worker — app-shell caching + offline fallback (PRD Phase 3 / PWA).
-const CACHE = 'daypilot-v14';
+const CACHE = 'daypilot-v15';
 const APP_SHELL = [
     '/offline.html',
     '/manifest.webmanifest',
@@ -8,8 +8,8 @@ const APP_SHELL = [
     '/lib/bootstrap/dist/css/bootstrap.min.css',
     '/lib/bootstrap/dist/js/bootstrap.bundle.min.js',
     '/lib/jquery/dist/jquery.min.js',
-    '/icons/icon-192.png',
-    '/icons/icon-512.png'
+    '/icons/logo-192.png',
+    '/icons/logo-512.png'
 ];
 
 self.addEventListener('install', event => {
@@ -78,6 +78,11 @@ self.addEventListener('fetch', event => {
     let url;
     try { url = new URL(req.url); } catch { return; }
     if (url.origin !== self.location.origin) return;   // leave CDN / dev tooling (Browser Link) alone
+
+    // Never let the service worker touch auth pages — a cached login page can serve a
+    // stale antiforgery token/cookie, which makes the first PWA login fail. Always go
+    // straight to the network for Identity so the token and cookie are fresh.
+    if (url.pathname.startsWith('/Identity/')) return;
 
     // Navigations: network-first, fall back to the cached offline page.
     if (req.mode === 'navigate') {
