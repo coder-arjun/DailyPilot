@@ -45,6 +45,7 @@
         }).then(r => {
             if (!r.ok) throw new Error('failed');
             card.classList.toggle('done', status === 'Completed');
+            if (status === 'Completed' && window.dpPlayComplete) window.dpPlayComplete();
         }).catch(() => { location.reload(); });   // reconcile on failure
     }
 

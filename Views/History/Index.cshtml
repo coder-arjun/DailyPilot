@@ -22,8 +22,8 @@
 }
 else
 {
-    <div class="table-responsive">
-        <table class="table table-striped">
+    <div class="card"><div class="table-responsive">
+        <table class="table dp-history-table align-middle mb-0">
             <thead><tr><th>When</th><th>Action</th><th>Task</th><th>Details</th></tr></thead>
             <tbody>
             @foreach (var h in Model)
@@ -37,7 +37,7 @@ else
             }
             </tbody>
         </table>
-    </div>
+    </div></div>
 
     <partial name="_Pager" model="@(new PagerViewModel { Page = page, TotalPages = totalPages, Action = "Index", Controller = "History" })" />
 }

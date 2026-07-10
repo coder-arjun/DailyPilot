@@ -5,6 +5,31 @@
         document.cookie = `${name}=${value};path=/;max-age=${60 * 60 * 24 * 365};samesite=lax`;
     }
 
+    // ---- Gentle "task complete" chime (Web Audio — no asset needed) ----
+    function playCompleteChime() {
+        try {
+            var Ctx = window.AudioContext || window.webkitAudioContext;
+            if (!Ctx) return;
+            var ac = new Ctx();
+            if (ac.state === 'suspended' && ac.resume) ac.resume();
+            var t0 = ac.currentTime;
+            function note(freq, at, dur, vol) {
+                var o = ac.createOscillator(), g = ac.createGain();
+                o.type = 'sine'; o.frequency.value = freq;
+                var t = t0 + at;
+                g.gain.setValueAtTime(0.0001, t);
+                g.gain.exponentialRampToValueAtTime(vol, t + 0.015);
+                g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+                o.connect(g); g.connect(ac.destination);
+                o.start(t); o.stop(t + dur + 0.02);
+            }
+            note(1174.66, 0, 0.34, 0.20);      // D6
+            note(1567.98, 0.10, 0.42, 0.16);   // G6 — soft ascending two-note bell
+            setTimeout(function () { try { ac.close(); } catch (e) { } }, 1000);
+        } catch (e) { /* audio unavailable */ }
+    }
+    window.dpPlayComplete = playCompleteChime;
+
     // ---- PWA install prompt (must be registered early, before DOMContentLoaded) ----
     let deferredInstallPrompt = null;
     window.addEventListener('beforeinstallprompt', function (e) {
@@ -57,6 +82,22 @@
                 } catch (err) { /* user cancelled share */ }
             });
         }
+
+        // ---- Play a chime when a task is marked complete (Today list) ----
+        document.addEventListener('click', function (e) {
+            var btn = e.target.closest('.dp-task-check');
+            if (!btn || btn.classList.contains('done') || btn.dataset.dpBusy) return;   // only when marking complete
+            var form = btn.closest('form');
+            if (!form) return;
+            e.preventDefault();
+            btn.dataset.dpBusy = '1';
+            playCompleteChime();
+            // instant visual feedback while the tone plays, then persist
+            btn.classList.add('done');
+            var icon = btn.querySelector('i'); if (icon) icon.className = 'bi bi-check-lg';
+            var card = btn.closest('.dp-task-card'); if (card) card.classList.add('is-done');
+            setTimeout(function () { form.requestSubmit ? form.requestSubmit() : form.submit(); }, 480);
+        });
 
         // ---- Server-side TempData toasts ----
         document.querySelectorAll('.dp-toast').forEach(function (el) {

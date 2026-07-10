@@ -1,3 +1,4 @@
+using System.Text.Json;
 using DailyPilot.Data;
 using DailyPilot.Models;
 using DailyPilot.ViewModels;
@@ -156,29 +157,80 @@ public class InvitationsController : Controller
         return RedirectToAction(nameof(Details), new { id = invitee.InviteListId });
     }
 
-    // POST /Invitations/Confirm — save the whole grid's invited state in one action.
+    // POST /Invitations/Confirm — persist the whole staged grid in one action.
+    // Adding/removing people is client-side only, so NOTHING is saved until this runs
+    // (hitting Back therefore discards the changes). Reconciles the submitted rows with
+    // what's stored: updates existing, inserts new, deletes ones removed on the client.
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Confirm(int listId, int[]? invitedIds)
+    public async Task<IActionResult> Confirm(int listId, string? payload)
     {
         var list = await _db.InviteLists
             .Include(l => l.Invitees)
             .FirstOrDefaultAsync(l => l.Id == listId && l.UserId == UserId);
         if (list is null) return NotFound();
 
-        var set = (invitedIds ?? Array.Empty<int>()).ToHashSet();
-        foreach (var p in list.Invitees)
+        List<InviteeInput> rows;
+        try { rows = JsonSerializer.Deserialize<List<InviteeInput>>(payload ?? "[]", JsonOpts) ?? new(); }
+        catch { rows = new(); }
+
+        var existing = list.Invitees.ToList();   // snapshot before we add new ones
+        var keep = new HashSet<int>();
+        var invited = 0;
+        var total = 0;
+
+        foreach (var row in rows)
         {
-            var invited = set.Contains(p.Id);
-            if (p.IsInvited != invited)
+            var name = (row.Name ?? string.Empty).Trim();
+            if (name.Length == 0) continue;
+            if (name.Length > 120) name = name[..120];
+            var contact = string.IsNullOrWhiteSpace(row.Contact) ? null : row.Contact.Trim();
+            if (contact is { Length: > 60 }) contact = contact[..60];
+            total++;
+            if (row.Invited) invited++;
+
+            var match = row.Id > 0 ? existing.FirstOrDefault(e => e.Id == row.Id) : null;
+            if (match is not null)
             {
-                p.IsInvited = invited;
-                p.InvitedAt = invited ? DateTime.UtcNow : null;
+                match.Name = name;
+                match.Contact = contact;
+                if (match.IsInvited != row.Invited)
+                {
+                    match.IsInvited = row.Invited;
+                    match.InvitedAt = row.Invited ? DateTime.UtcNow : null;
+                }
+                keep.Add(match.Id);
+            }
+            else
+            {
+                _db.Invitees.Add(new Invitee
+                {
+                    InviteListId = listId,
+                    Name = name,
+                    Contact = contact,
+                    IsInvited = row.Invited,
+                    InvitedAt = row.Invited ? DateTime.UtcNow : null
+                });
             }
         }
+
+        foreach (var e in existing)
+            if (!keep.Contains(e.Id))
+                _db.Invitees.Remove(e);
+
         await _db.SaveChangesAsync();
-        TempData["Success"] = $"Saved — {set.Count} of {list.Invitees.Count} marked as invited.";
+        TempData["Success"] = $"Saved — {invited} of {total} marked as invited.";
         return RedirectToAction(nameof(Details), new { id = listId });
+    }
+
+    private static readonly JsonSerializerOptions JsonOpts = new() { PropertyNameCaseInsensitive = true };
+
+    private class InviteeInput
+    {
+        public int Id { get; set; }
+        public string? Name { get; set; }
+        public string? Contact { get; set; }
+        public bool Invited { get; set; }
     }
 
     // POST /Invitations/DeleteInvitee

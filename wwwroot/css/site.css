@@ -898,3 +898,43 @@ body, .card, .dp-navbar, .dp-task-card, .form-control, .form-select,
     padding: .5rem .7rem; border-radius: var(--dp-radius-sm);
     background: var(--dp-surface-2); border: 1px solid var(--bs-border-color); font-weight: 500;
 }
+
+.dp-invite-footer { display: flex; justify-content: space-between; align-items: center; gap: .8rem; flex-wrap: wrap; }
+
+/* Mobile: turn the invitee table into clean stacked cards */
+@media (max-width: 575.98px) {
+    .dp-invite-table thead { display: none; }
+    .dp-invite-table tbody { display: flex; flex-direction: column; gap: .55rem; padding: .55rem; }
+    .dp-invite-table tr.dp-inv-row {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        grid-template-areas: "chk name status" "chk contact action";
+        align-items: center; gap: .1rem .85rem;
+        padding: .7rem .85rem; border: 1px solid var(--bs-border-color);
+        border-radius: var(--dp-radius-sm); background: var(--dp-surface-2);
+    }
+    .dp-invite-table tr.dp-inv-row.is-pending { box-shadow: inset 3px 0 0 #f59e0b; }
+    .dp-invite-table tr.dp-inv-row.is-invited { box-shadow: inset 3px 0 0 #22c55e; }
+    .dp-invite-table td { display: block; border: 0 !important; padding: 0; }
+    .dp-invite-table .dp-inv-cell-chk { grid-area: chk; align-self: center; }
+    .dp-invite-table .dp-inv-name { grid-area: name; font-size: 1rem; }
+    .dp-invite-table .dp-inv-contact { grid-area: contact; font-size: .82rem; }
+    .dp-invite-table .dp-inv-status { grid-area: status; justify-self: end; align-self: center; }
+    .dp-invite-table .dp-inv-cell-act { grid-area: action; justify-self: end; align-self: center; }
+    .dp-invite-table .dp-inv-cell-act .btn { font-size: 1.05rem; padding: .2rem .35rem !important; }
+
+    .dp-invite-footer { flex-direction: column-reverse; align-items: stretch; }
+    .dp-invite-footer > div { display: grid; grid-template-columns: 1fr 1.6fr; gap: .5rem; }
+    .dp-invite-footer .btn { width: 100%; }
+}
+
+/* History — explicit dark-safe rows so text never lands on a white background */
+.dp-history-table { --bs-table-bg: transparent; color: var(--bs-body-color); margin: 0; }
+.dp-history-table > thead > tr > th {
+    color: var(--dp-muted); border-color: var(--bs-border-color);
+    font-size: .78rem; text-transform: uppercase; letter-spacing: .04em;
+}
+.dp-history-table > tbody > tr > td { background-color: transparent !important; color: var(--bs-body-color); border-color: var(--bs-border-color); }
+.dp-history-table > tbody > tr:nth-of-type(even) > td { background-color: rgba(var(--dp-primary-rgb), .06) !important; }
+.dp-history-table > tbody > tr:hover > td { background-color: rgba(var(--dp-primary-rgb), .10) !important; }
+.dp-history-table .text-muted { color: var(--dp-muted) !important; }
