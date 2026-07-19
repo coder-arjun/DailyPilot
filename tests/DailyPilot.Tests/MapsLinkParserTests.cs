@@ -140,6 +140,32 @@ public class MapsLinkParserTests
         Assert.False(MapsLinkParser.TryGetSearchQuery("not a url", out _, out _));
     }
 
+    // ---------- Place query from either ?q= or the /place/ path ----------
+
+    [Fact]
+    public void TryGetPlaceQuery_PlacePathWithoutQParam_UsesPathSegment()
+    {
+        // Share → Copy link can also expand to /maps/place/<address>/data=!…!1s<ftid>
+        // with no ?q= and no coordinates anywhere.
+        var url = "https://www.google.com/maps/place/Edappally+Toll,+Unnichira,+Koonamthai,+Edappally,+Ernakulam,+Kerala+682024/data=!4m2!3m1!1s0x3b080dae06d59d9f:0x3cb6df0f9c5c9c68!18m1!1e1?utm_source=mstt_1&entry=gps";
+        Assert.True(MapsLinkParser.TryGetPlaceQuery(url, out var q));
+        Assert.Equal("Edappally Toll, Unnichira, Koonamthai, Edappally, Ernakulam, Kerala 682024", q);
+    }
+
+    [Fact]
+    public void TryGetPlaceQuery_QParamUrl_ReturnsQ()
+    {
+        var url = "https://www.google.com/maps?q=Twigs+Beauty+Lounge&ftid=0x1:0x2";
+        Assert.True(MapsLinkParser.TryGetPlaceQuery(url, out var q));
+        Assert.Equal("Twigs Beauty Lounge", q);
+    }
+
+    [Fact]
+    public void TryGetPlaceQuery_NeitherForm_ReturnsFalse()
+    {
+        Assert.False(MapsLinkParser.TryGetPlaceQuery("https://www.google.com/maps/@12.97,77.59,15z", out _));
+    }
+
     // ---------- Embed-page coordinate extraction ----------
 
     [Fact]

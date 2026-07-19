@@ -91,7 +91,7 @@ public class RoutePlannerController : Controller
     /// </summary>
     private async Task<IActionResult?> ResolveViaEmbedAsync(HttpClient client, string mapsUrl, CancellationToken ct)
     {
-        if (!MapsLinkParser.TryGetSearchQuery(mapsUrl, out var q, out _)) return null;
+        if (!MapsLinkParser.TryGetPlaceQuery(mapsUrl, out var q)) return null;
 
         foreach (var variant in MapsLinkParser.QueryVariants(q))
         {

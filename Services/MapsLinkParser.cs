@@ -86,6 +86,23 @@ public static class MapsLinkParser
     }
 
     /// <summary>
+    /// The text to geocode for a coordinate-less Google Maps URL: the ?q= search
+    /// text when present, else the "/place/&lt;name&gt;" path segment.
+    /// </summary>
+    public static bool TryGetPlaceQuery(string? url, out string query)
+    {
+        if (TryGetSearchQuery(url, out query, out _)) return true;
+        var label = ExtractPlaceLabel(url);
+        if (label is not null)
+        {
+            query = label;
+            return true;
+        }
+        query = string.Empty;
+        return false;
+    }
+
+    /// <summary>
     /// Finds the first in-range "[lat,lng]" float pair in the output=embed page —
     /// out-of-range pairs (zoom radii, spans) are skipped.
     /// </summary>
