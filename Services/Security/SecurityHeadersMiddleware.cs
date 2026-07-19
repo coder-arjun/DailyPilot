@@ -29,7 +29,9 @@ public class SecurityHeadersMiddleware
         headers["X-Content-Type-Options"] = "nosniff";
         headers["X-Frame-Options"] = "DENY";
         headers["Referrer-Policy"] = "no-referrer";
-        headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()";
+        // geolocation=(self): the Route Planner needs the browser's location prompt;
+        // () would auto-deny it site-wide without ever prompting.
+        headers["Permissions-Policy"] = "geolocation=(self), microphone=(), camera=()";
         headers["Content-Security-Policy"] =
             "default-src 'self'; " +
             "img-src 'self' data:; " +
