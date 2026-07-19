@@ -122,6 +122,108 @@ public class MapsLinkParserTests
         Assert.Null(MapsLinkParser.ExtractPlaceLabel("12.97,77.59"));
     }
 
+    // ---------- Name-search URLs (Share → Copy link from the Maps app) ----------
+
+    [Fact]
+    public void TryGetSearchQuery_NameAndFtid_ExtractsBoth()
+    {
+        var url = "https://www.google.com/maps?q=Twigs+Beauty+Lounge%D8%8C+%D8%B9%D9%85%D9%91%D8%A7%D9%86+11821&ftid=0x151ca14f118fcb2f:0xa6158e4e8b82fa6c&entry=gps";
+        Assert.True(MapsLinkParser.TryGetSearchQuery(url, out var q, out var ftid));
+        Assert.StartsWith("Twigs Beauty Lounge", q);
+        Assert.Equal("0x151ca14f118fcb2f:0xa6158e4e8b82fa6c", ftid);
+    }
+
+    [Fact]
+    public void TryGetSearchQuery_NoQParam_ReturnsFalse()
+    {
+        Assert.False(MapsLinkParser.TryGetSearchQuery("https://www.google.com/maps/@12.97,77.59,15z", out _, out _));
+        Assert.False(MapsLinkParser.TryGetSearchQuery("not a url", out _, out _));
+    }
+
+    // ---------- Embed-page coordinate extraction ----------
+
+    [Fact]
+    public void TryExtractEmbedPoint_FirstValidPair_Extracts()
+    {
+        var html = "<script>window.APP_OPTIONS=[1,null,[31.9771854,35.8549766],\"x\"]</script>";
+        Assert.True(MapsLinkParser.TryExtractEmbedPoint(html, out var p));
+        Assert.Equal(31.9771854, p.Lat, 6);
+        Assert.Equal(35.8549766, p.Lng, 6);
+    }
+
+    [Fact]
+    public void TryExtractEmbedPoint_SkipsOutOfRangePairs()
+    {
+        // APP_INITIALIZATION_STATE-style junk (zoom radius, lng, lat) precedes the real pair.
+        var html = "=[[[251478.57316820518,76.3133952],[31.9771854,35.8549766]]]";
+        Assert.True(MapsLinkParser.TryExtractEmbedPoint(html, out var p));
+        Assert.Equal(31.9771854, p.Lat, 6);
+        Assert.Equal(35.8549766, p.Lng, 6);
+    }
+
+    [Fact]
+    public void TryExtractEmbedPoint_NoPair_ReturnsFalse()
+    {
+        Assert.False(MapsLinkParser.TryExtractEmbedPoint("<html>no coordinates here</html>", out _));
+        Assert.False(MapsLinkParser.TryExtractEmbedPoint(null, out _));
+    }
+
+    // ---------- Consent interstitial (EU servers) ----------
+
+    [Fact]
+    public void ExtractConsentContinue_ReturnsInnerUrl()
+    {
+        var url = "https://consent.google.com/m?continue=https%3A%2F%2Fwww.google.com%2Fmaps%2Fplace%2FX%2F%4031.97%2C35.85%2C17z&gl=DE";
+        Assert.Equal("https://www.google.com/maps/place/X/@31.97,35.85,17z", MapsLinkParser.ExtractConsentContinue(url));
+    }
+
+    [Fact]
+    public void ExtractConsentContinue_NotConsentHost_ReturnsNull()
+    {
+        Assert.Null(MapsLinkParser.ExtractConsentContinue("https://www.google.com/maps?continue=x"));
+    }
+
+    // ---------- Query variants for embed geocoding ----------
+
+    [Fact]
+    public void QueryVariants_FullAddress_YieldsFullThenFirstPlusLastThenFirst()
+    {
+        var q = "Twigs Beauty Lounge، ش. إمثاري النعيمات، عمّان 11821";
+        var v = MapsLinkParser.QueryVariants(q).ToArray();
+        Assert.Equal(new[]
+        {
+            q,
+            "Twigs Beauty Lounge عمّان 11821",
+            "Twigs Beauty Lounge",
+        }, v);
+    }
+
+    [Fact]
+    public void QueryVariants_NoCommas_YieldsSingleVariant()
+    {
+        Assert.Equal(new[] { "Plain Name" }, MapsLinkParser.QueryVariants("Plain Name").ToArray());
+    }
+
+    [Fact]
+    public void QueryVariants_TwoSegments_NoDuplicates()
+    {
+        // first+last == "A B" and first == "A": all three distinct, but a
+        // degenerate "A, A" must not produce duplicate entries.
+        var v = MapsLinkParser.QueryVariants("A, A").ToArray();
+        Assert.Equal(new[] { "A, A", "A A", "A" }, v);
+    }
+
+    // ---------- Label from a search query ----------
+
+    [Theory]
+    [InlineData("Twigs Beauty Lounge، ش. إمثاري النعيمات، عمّان 11821", "Twigs Beauty Lounge")]
+    [InlineData("Blue Tokai Coffee, Indiranagar, Bengaluru", "Blue Tokai Coffee")]
+    [InlineData("Plain Name", "Plain Name")]
+    public void LabelFromQuery_TakesNameBeforeFirstComma(string q, string expected)
+    {
+        Assert.Equal(expected, MapsLinkParser.LabelFromQuery(q));
+    }
+
     // ---------- Haversine ----------
 
     [Fact]

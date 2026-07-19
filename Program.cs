@@ -109,11 +109,19 @@ builder.Services.AddScoped<IUserSeeder, UserSeeder>();
 builder.Services.AddSingleton<IFileStorageService, FileStorageService>();
 builder.Services.AddScoped<BackgroundJobs>();
 
-// Route Planner: expands maps.app.goo.gl short links server-side.
+// Route Planner: expands maps.app.goo.gl short links and place lookups server-side.
+// UseCookies=false so our fixed Cookie header is sent as-is; SOCS/CONSENT skip the
+// EU consent interstitial Google serves from EU datacenters (this host is EU-based).
 builder.Services.AddHttpClient("maps-resolver", c =>
 {
-    c.Timeout = TimeSpan.FromSeconds(6);
+    c.Timeout = TimeSpan.FromSeconds(8);
     c.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (compatible; DayPilot/1.0)");
+    c.DefaultRequestHeaders.Add("Accept-Language", "en");
+    c.DefaultRequestHeaders.Add("Cookie", "SOCS=CAI; CONSENT=YES+");
+}).ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+{
+    UseCookies = false,
+    AllowAutoRedirect = true,
 });
 
 // --- Email (PRD §11) ---
