@@ -1,0 +1,99 @@
+@{
+    ViewData["Title"] = "Route Planner";
+}
+
+<div class="rp-page">
+    <header class="rp-head">
+        <div class="rp-eyebrow"><i class="bi bi-signpost-split"></i> Route planner</div>
+        <h1 class="rp-title">Where <span class="rp-title-grad">first?</span></h1>
+        <p class="rp-sub">Share your location, paste up to five Google Maps places, and DayPilot orders them nearest-first — then hands the whole route to Google Maps for turn-by-turn directions.</p>
+    </header>
+
+    <div class="rp-grid">
+        <section class="rp-card" aria-labelledby="rpStopsHead">
+            <h2 class="rp-card-title" id="rpStopsHead">Your stops</h2>
+
+            <ol class="rp-rail" id="rpRail">
+                <li class="rp-node rp-node-you">
+                    <span class="rp-marker rp-marker-you" aria-hidden="true"><span class="rp-beacon"></span></span>
+                    <div class="rp-node-body">
+                        <div class="rp-node-label">You</div>
+                        <div class="rp-you-idle" id="rpYouIdle">
+                            <button type="button" class="btn rp-locate" id="rpLocateBtn">
+                                <i class="bi bi-crosshair"></i> Use my location
+                            </button>
+                            <button type="button" class="rp-link" id="rpYouManualBtn">enter manually</button>
+                        </div>
+                        <div class="rp-resolve d-none" id="rpYouManual">
+                            <input type="text" class="form-control rp-input" id="rpYouInput"
+                                   placeholder="Paste a Google Maps link or &quot;lat,lng&quot;" autocomplete="off" />
+                            <span class="rp-spinner d-none" aria-hidden="true"></span>
+                        </div>
+                        <button type="button" class="rp-chip d-none" id="rpYouChip" title="Change starting point"></button>
+                        <div class="rp-error d-none" id="rpYouError" role="alert"></div>
+                    </div>
+                </li>
+                @* Stop nodes are cloned from the template below *@
+            </ol>
+
+            <button type="button" class="rp-add" id="rpAddBtn"><i class="bi bi-plus-lg"></i> Add stop</button>
+
+            <div class="rp-actions">
+                <button type="button" class="btn btn-primary rp-compare" id="rpCompareBtn" disabled>
+                    <i class="bi bi-arrow-down-up"></i> Compare distances
+                </button>
+                <span class="rp-hint" id="rpHint">Share your location and add at least two stops.</span>
+            </div>
+        </section>
+
+        <section class="rp-card rp-results" id="rpResults" aria-labelledby="rpResultsHead" aria-live="polite">
+            <h2 class="rp-card-title" id="rpResultsHead">Nearest first</h2>
+
+            <div class="rp-empty" id="rpEmpty">
+                <span class="rp-empty-ring" aria-hidden="true"><i class="bi bi-geo"></i></span>
+                <p>Your ranked stops appear here.</p>
+            </div>
+
+            <div class="rp-stale d-none" id="rpStale">
+                <i class="bi bi-arrow-clockwise"></i> Stops changed — compare again to refresh.
+            </div>
+
+            <ol class="rp-ranked d-none" id="rpRanked"></ol>
+
+            <a class="rp-go d-none" id="rpGo" target="_blank" rel="noopener">
+                <span><i class="bi bi-sign-turn-right"></i> Open route in Google Maps</span>
+                <i class="bi bi-arrow-up-right"></i>
+            </a>
+            <p class="rp-note d-none" id="rpNote">
+                <i class="bi bi-info-circle"></i>
+                Distances are straight-line ("as the crow flies"). Google Maps shows real road routes once the route opens.
+            </p>
+        </section>
+    </div>
+</div>
+
+<template id="rpStopTemplate">
+    <li class="rp-node rp-node-stop">
+        <span class="rp-marker" aria-hidden="true"><span class="rp-marker-num"></span></span>
+        <div class="rp-node-body">
+            <div class="rp-node-label">
+                <span class="rp-stop-name">Stop</span>
+                <button type="button" class="rp-remove" title="Remove this stop" aria-label="Remove this stop">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+            <div class="rp-resolve">
+                <input type="text" class="form-control rp-input"
+                       placeholder="Paste a Google Maps link or &quot;lat,lng&quot;" autocomplete="off" />
+                <span class="rp-spinner d-none" aria-hidden="true"></span>
+            </div>
+            <button type="button" class="rp-chip d-none" title="Change this stop"></button>
+            <div class="rp-error d-none" role="alert"></div>
+        </div>
+    </li>
+</template>
+
+@section Scripts {
+    <script>window.dpRoutePlanner = { resolveUrl: '@Url.Action("Resolve", "RoutePlanner")' };</script>
+    <script src="~/js/route-planner.js" asp-append-version="true"></script>
+}
