@@ -109,6 +109,13 @@ builder.Services.AddScoped<IUserSeeder, UserSeeder>();
 builder.Services.AddSingleton<IFileStorageService, FileStorageService>();
 builder.Services.AddScoped<BackgroundJobs>();
 
+// Route Planner: expands maps.app.goo.gl short links server-side.
+builder.Services.AddHttpClient("maps-resolver", c =>
+{
+    c.Timeout = TimeSpan.FromSeconds(6);
+    c.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (compatible; DayPilot/1.0)");
+});
+
 // --- Email (PRD §11) ---
 builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection("Email"));
 builder.Services.AddScoped<IAppEmailSender, SmtpEmailSender>();
