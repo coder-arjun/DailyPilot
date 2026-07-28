@@ -109,6 +109,35 @@ builder.Services.AddScoped<IUserSeeder, UserSeeder>();
 builder.Services.AddSingleton<IFileStorageService, FileStorageService>();
 builder.Services.AddScoped<BackgroundJobs>();
 
+// --- Mobile REST API (JWT bearer, scheme "Api"; cookie auth stays the default) ---
+builder.Services.AddAuthentication()
+    .AddJwtBearer("Api", o =>
+    {
+        var secret = builder.Configuration["Jwt:Secret"];
+        o.MapInboundClaims = false;
+        o.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+        {
+            ValidIssuer = builder.Configuration["Jwt:Issuer"] ?? "DayPilot",
+            ValidAudience = builder.Configuration["Jwt:Issuer"] ?? "DayPilot",
+            IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
+                System.Text.Encoding.UTF8.GetBytes(secret ?? "unconfigured-jwt-secret-placeholder-value")),
+            ClockSkew = TimeSpan.FromMinutes(1),
+        };
+    });
+builder.Services.AddScoped<DailyPilot.Services.Api.IJwtTokenService, DailyPilot.Services.Api.JwtTokenService>();
+builder.Services.AddScoped<DailyPilot.Services.Api.IRefreshTokenService, DailyPilot.Services.Api.RefreshTokenService>();
+builder.Services.Configure<Microsoft.AspNetCore.Mvc.ApiBehaviorOptions>(o =>
+{
+    // API error contract is {"error": "..."} — flatten automatic validation 400s to it.
+    o.InvalidModelStateResponseFactory = ctx =>
+        new Microsoft.AspNetCore.Mvc.BadRequestObjectResult(new
+        {
+            error = ctx.ModelState.Values.SelectMany(v => v.Errors)
+                        .Select(e => e.ErrorMessage)
+                        .FirstOrDefault(m => !string.IsNullOrWhiteSpace(m)) ?? "Invalid request.",
+        });
+});
+
 // Route Planner: expands maps.app.goo.gl short links and place lookups server-side.
 // UseCookies=false so our fixed Cookie header is sent as-is; SOCS/CONSENT skip the
 // EU consent interstitial Google serves from EU datacenters (this host is EU-based).
