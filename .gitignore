@@ -371,3 +371,5 @@ publish/
 Storage/
 /CLAUDE.md
 .superpowers/
+secrets/
+mobile/google-services.json

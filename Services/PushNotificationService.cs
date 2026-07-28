@@ -26,20 +26,27 @@ public class PushNotificationService : IPushNotificationService
     private readonly ApplicationDbContext _db;
     private readonly PushOptions _options;
     private readonly ILogger<PushNotificationService> _logger;
+    private readonly DailyPilot.Services.Api.IFcmPushSender _fcm;
     private readonly WebPushClient _client = new();
 
-    public PushNotificationService(ApplicationDbContext db, IOptions<PushOptions> options, ILogger<PushNotificationService> logger)
+    public PushNotificationService(ApplicationDbContext db, IOptions<PushOptions> options,
+        ILogger<PushNotificationService> logger, DailyPilot.Services.Api.IFcmPushSender fcm)
     {
         _db = db;
         _options = options.Value;
         _logger = logger;
+        _fcm = fcm;
     }
 
-    public bool IsEnabled => _options.IsConfigured;
+    public bool IsEnabled => _options.IsConfigured || _fcm.IsEnabled;
 
     public async Task SendToUserAsync(string userId, string title, string body, string? url = null, string? tag = null)
     {
-        if (!IsEnabled) return;
+        // Native mobile devices first (no-op when FCM isn't configured)…
+        await _fcm.SendToUserAsync(userId, title, body, url);
+
+        // …then Web Push to registered browsers.
+        if (!_options.IsConfigured) return;
 
         var subs = await _db.PushSubscriptions.Where(s => s.UserId == userId).ToListAsync();
         if (subs.Count == 0) return;

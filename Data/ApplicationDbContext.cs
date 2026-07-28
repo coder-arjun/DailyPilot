@@ -32,6 +32,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IDataPro
     public DbSet<TaskComment> TaskComments => Set<TaskComment>();
 
     public DbSet<ApiRefreshToken> ApiRefreshTokens => Set<ApiRefreshToken>();
+    public DbSet<DeviceToken> DeviceTokens => Set<DeviceToken>();
 
     public DbSet<EventType> EventTypes => Set<EventType>();
     public DbSet<InviteList> InviteLists => Set<InviteList>();
@@ -218,6 +219,19 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IDataPro
             e.Property(t => t.TokenHash).HasMaxLength(64);
 
             // Single cascade path: User → ApiRefreshTokens.
+            e.HasOne(t => t.User)
+                .WithMany()
+                .HasForeignKey(t => t.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<DeviceToken>(e =>
+        {
+            e.HasIndex(t => t.Token).IsUnique();
+            e.Property(t => t.Token).HasMaxLength(512);
+            e.Property(t => t.Platform).HasMaxLength(16);
+
+            // Single cascade path: User → DeviceTokens.
             e.HasOne(t => t.User)
                 .WithMany()
                 .HasForeignKey(t => t.UserId)
