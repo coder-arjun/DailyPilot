@@ -74,6 +74,18 @@ export default function CalendarScreen() {
     setSelected(stillToday ? todayIso : `${monthKey(y, m)}-01`);
   }
 
+  /** Selecting a leading/trailing overflow cell navigates the header to that day's
+   * actual month too, so the fetched data (and dots) match what's rendered. */
+  function selectDay(d: Date) {
+    const cellYear = d.getFullYear();
+    const cellMonth = d.getMonth() + 1;
+    if (cellYear !== year || cellMonth !== month) {
+      setYear(cellYear);
+      setMonth(cellMonth);
+    }
+    setSelected(isoDate(d));
+  }
+
   return (
     <Screen>
       <View style={styles.header}>
@@ -117,7 +129,7 @@ export default function CalendarScreen() {
                   isSelected && styles.cellSelected,
                   isToday && !isSelected && styles.cellToday,
                 ]}
-                onPress={() => setSelected(iso)}
+                onPress={() => selectDay(d)}
               >
                 <Text style={[styles.cellText, !inMonth && styles.cellTextOutside, isSelected && styles.cellTextSelected]}>
                   {d.getDate()}
