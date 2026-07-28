@@ -5,8 +5,8 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>7ef97504-570c-482c-94d0-b9b26bc05e67</UserSecretsId>
-    <!-- tests/ holds its own project; keep it out of the web app's default globs -->
-    <DefaultItemExcludes>$(DefaultItemExcludes);tests/**</DefaultItemExcludes>
+    <!-- tests/ and mobile/ hold their own projects; keep them out of the web app's default globs -->
+    <DefaultItemExcludes>$(DefaultItemExcludes);tests/**;mobile/**</DefaultItemExcludes>
   </PropertyGroup>
 
   <ItemGroup>
