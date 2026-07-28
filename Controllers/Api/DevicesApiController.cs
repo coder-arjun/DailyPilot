@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using DailyPilot.Data;
 using DailyPilot.Models;
+using DailyPilot.Services.Api;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,7 +11,25 @@ namespace DailyPilot.Controllers.Api;
 public class DevicesApiController : ApiControllerBase
 {
     private readonly ApplicationDbContext _db;
-    public DevicesApiController(ApplicationDbContext db) => _db = db;
+    private readonly IFcmPushSender _fcm;
+
+    public DevicesApiController(ApplicationDbContext db, IFcmPushSender fcm)
+    {
+        _db = db;
+        _fcm = fcm;
+    }
+
+    /// <summary>Diagnostic: sends a native-only (FCM) test notification to the
+    /// caller's registered devices and reports what the server knows.</summary>
+    [HttpPost("test")]
+    public async Task<IActionResult> SendTest()
+    {
+        var deviceCount = await _db.DeviceTokens.CountAsync(t => t.UserId == CurrentUserId);
+        if (_fcm.IsEnabled && deviceCount > 0)
+            await _fcm.SendToUserAsync(CurrentUserId, "DayPilot app test",
+                "Native push works! You should hear this too if Speak reminders is on. 🎉", "/Tasks");
+        return Ok(new { ok = true, fcmEnabled = _fcm.IsEnabled, deviceCount });
+    }
 
     public sealed record DeviceRequest([Required, StringLength(512)] string Token, string? Platform);
 

@@ -16,7 +16,8 @@ import {
 import { Button, Card, ErrorText, Input, Label, Muted, Screen } from '@/components/ui';
 import { apiErrorMessage } from '@/lib/api/client';
 import { config } from '@/lib/config';
-import { unregisterPushAsync } from '@/lib/push';
+import { registerForPushAsync, unregisterPushAsync } from '@/lib/push';
+import { api } from '@/lib/api/client';
 import { theme } from '@/lib/theme';
 import { useAccount, useUpdateSettings } from '@/features/account/api';
 import { useAuthStore } from '@/stores/authStore';
@@ -72,6 +73,30 @@ export default function SettingsScreen() {
       setSaved(true);
     } catch (e) {
       setSaveError(apiErrorMessage(e));
+    }
+  }
+
+  const [testBusy, setTestBusy] = useState(false);
+  const [testResult, setTestResult] = useState('');
+
+  async function onSendTest() {
+    setTestBusy(true);
+    setTestResult('');
+    try {
+      // Re-register first so a stale/missing token can't produce a false negative.
+      await registerForPushAsync();
+      const { data } = await api.post<{ ok: boolean; fcmEnabled: boolean; deviceCount: number }>(
+        '/devices/test',
+        {},
+      );
+      if (!data.fcmEnabled) setTestResult('Server has no Firebase credentials — push is off.');
+      else if (data.deviceCount === 0)
+        setTestResult('No devices registered for your account — check the notification permission and try again.');
+      else setTestResult(`Sent to ${data.deviceCount} device(s) — it should arrive within seconds.`);
+    } catch (e) {
+      setTestResult(apiErrorMessage(e));
+    } finally {
+      setTestBusy(false);
     }
   }
 
@@ -203,6 +228,22 @@ export default function SettingsScreen() {
           {saved && !saveError ? <Muted>Saved.</Muted> : null}
           <View style={{ height: spacing(3) }} />
           <Button title="Save changes" onPress={onSave} loading={updateSettings.isPending} />
+        </Card>
+
+        <Card style={styles.card}>
+          <Text style={styles.sectionTitle}>Notifications</Text>
+          <Muted>
+            Sends a test through the same channel reminders use — you should get it within
+            seconds, even with the app closed.
+          </Muted>
+          <View style={{ height: spacing(3) }} />
+          <Button
+            title="Send test notification"
+            variant="ghost"
+            loading={testBusy}
+            onPress={onSendTest}
+          />
+          {testResult ? <Muted>{testResult}</Muted> : null}
         </Card>
 
         <Card style={styles.card}>
