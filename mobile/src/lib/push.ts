@@ -3,6 +3,7 @@ import * as Notifications from 'expo-notifications';
 import * as Speech from 'expo-speech';
 import { Platform } from 'react-native';
 import { api } from '@/lib/api/client';
+import { wasHandled } from '@/lib/push-background';
 import { queryClient } from '@/lib/queryClient';
 
 /** Foreground presentation: reminders should still show as a banner. */
@@ -87,8 +88,10 @@ async function shouldSpeak(): Promise<boolean> {
  */
 export function watchSpokenReminders(): () => void {
   const sub = Notifications.addNotificationReceivedListener(async (notification) => {
-    if (!(await shouldSpeak())) return;
     const { title, body } = notification.request.content;
+    // The background task already displayed+spoke this one (data-only path).
+    if (wasHandled(`${title ?? ''}|${body ?? ''}`)) return;
+    if (!(await shouldSpeak())) return;
     const text = [title, body].filter(Boolean).join('. ');
     if (text) Speech.speak(text, { language: 'en' });
   });

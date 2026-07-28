@@ -79,19 +79,27 @@ public class FcmPushSender : IFcmPushSender
         var tokens = await _db.DeviceTokens.Where(t => t.UserId == userId).ToListAsync();
         if (tokens.Count == 0) return;
 
+        // Data-only message: the app's background handler displays (and optionally
+        // speaks) it, which works locked/killed. A "notification" block would let the
+        // system display it instead, but then the app never runs and cannot speak.
+        var speak = await _db.Users.Where(u => u.Id == userId)
+            .Select(u => u.SpeakReminders).FirstOrDefaultAsync();
+
         var pruned = false;
         foreach (var device in tokens)
         {
             var message = new Message
             {
                 Token = device.Token,
-                Notification = new Notification { Title = title, Body = body },
-                Android = new AndroidConfig
+                Android = new AndroidConfig { Priority = Priority.High },
+                Data = new Dictionary<string, string>
                 {
-                    Priority = Priority.High,
-                    Notification = new AndroidNotification { ChannelId = Channel },
+                    ["title"] = title,
+                    ["body"] = body,
+                    ["url"] = url ?? "",
+                    ["speak"] = speak ? "1" : "0",
+                    ["channelId"] = Channel,
                 },
-                Data = url is null ? null : new Dictionary<string, string> { ["url"] = url },
             };
 
             try

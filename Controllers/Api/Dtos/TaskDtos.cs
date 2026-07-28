@@ -19,7 +19,8 @@ public sealed record TaskDto(
     int CarryForwardCount,
     int? EstimatedMinutes,
     int? ActualMinutes,
-    bool IsCompleted)
+    bool IsCompleted,
+    string? ReminderFiredOn)
 {
     public static TaskDto From(TaskItem t) => new(
         t.Id,
@@ -36,7 +37,8 @@ public sealed record TaskDto(
         t.CarryForwardCount,
         t.EstimatedMinutes,
         t.ActualMinutes,
-        t.IsCompleted);
+        t.IsCompleted,
+        t.ReminderFiredOn?.ToString("yyyy-MM-dd"));
 }
 
 public sealed record TaskWriteRequest(

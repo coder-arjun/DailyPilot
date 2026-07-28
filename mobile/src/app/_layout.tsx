@@ -1,3 +1,4 @@
+import '@/lib/push-background'; // must load at module scope — headless reminder handling
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';

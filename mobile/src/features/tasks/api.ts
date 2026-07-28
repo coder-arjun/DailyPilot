@@ -17,6 +17,7 @@ export type TaskDto = {
   estimatedMinutes: number | null;
   actualMinutes: number | null;
   isCompleted: boolean;
+  reminderFiredOn: string | null;
 };
 
 export type CategoryDto = { id: number; name: string; color: string };
