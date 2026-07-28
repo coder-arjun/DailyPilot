@@ -22,6 +22,7 @@ export default function HabitsScreen() {
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState('');
   const [color, setColor] = useState(habitColorPresets[0]);
+  const [frequency, setFrequency] = useState<0 | 1>(0); // 0 Daily, 1 Weekly
   const [targetPerWeek, setTargetPerWeek] = useState('3');
   const [formError, setFormError] = useState('');
 
@@ -35,12 +36,13 @@ export default function HabitsScreen() {
     try {
       await createHabit.mutateAsync({
         name: name.trim(),
-        frequency: 0,
+        frequency,
         targetPerWeek: target,
         color,
       });
       setName('');
       setColor(habitColorPresets[0]);
+      setFrequency(0);
       setTargetPerWeek('3');
       setShowForm(false);
     } catch (e) {
@@ -89,13 +91,33 @@ export default function HabitsScreen() {
                 ))}
               </View>
 
-              <Label>Weekly target (days)</Label>
-              <Input
-                value={targetPerWeek}
-                onChangeText={setTargetPerWeek}
-                keyboardType="number-pad"
-                placeholder="3"
-              />
+              <Label>Frequency</Label>
+              <View style={styles.segment}>
+                <Pressable
+                  style={[styles.segmentItem, frequency === 0 && styles.segmentActive]}
+                  onPress={() => setFrequency(0)}
+                >
+                  <Text style={[styles.segmentText, frequency === 0 && { color: colors.primary }]}>Daily</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.segmentItem, frequency === 1 && styles.segmentActive]}
+                  onPress={() => setFrequency(1)}
+                >
+                  <Text style={[styles.segmentText, frequency === 1 && { color: colors.primary }]}>Weekly</Text>
+                </Pressable>
+              </View>
+
+              {frequency === 1 ? (
+                <>
+                  <Label>Weekly target (days)</Label>
+                  <Input
+                    value={targetPerWeek}
+                    onChangeText={setTargetPerWeek}
+                    keyboardType="number-pad"
+                    placeholder="3"
+                  />
+                </>
+              ) : null}
 
               <ErrorText>{formError}</ErrorText>
               <View style={{ height: spacing(3) }} />
@@ -185,6 +207,17 @@ const styles = StyleSheet.create({
   colorRow: { flexDirection: 'row', gap: spacing(2.5), flexWrap: 'wrap' },
   colorSwatch: { width: 32, height: 32, borderRadius: 16, borderWidth: 2, borderColor: 'transparent' },
   colorSwatchActive: { borderColor: colors.text },
+  segment: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing(2) },
+  segmentItem: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 999,
+    paddingHorizontal: spacing(3.5),
+    paddingVertical: spacing(2),
+    backgroundColor: colors.surface2,
+  },
+  segmentActive: { borderColor: colors.primary, backgroundColor: colors.primary + '22' },
+  segmentText: { color: colors.muted, fontWeight: '600', fontSize: 13 },
   row: {
     flexDirection: 'row',
     gap: spacing(3),
