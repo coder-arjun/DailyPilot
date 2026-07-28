@@ -3,6 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -20,6 +21,7 @@ import {
   useCategories,
   useCreateTask,
   useDeleteTask,
+  useTask,
   useTodayTasks,
   useUpdateTask,
 } from '@/features/tasks/api';
@@ -37,7 +39,14 @@ export default function TaskEditorScreen() {
   const editingId = params.id ? Number(params.id) : null;
 
   const { data: tasks } = useTodayTasks();
-  const existing = editingId ? tasks?.find((t) => t.id === editingId) : undefined;
+  const cacheHit = editingId ? tasks?.find((t) => t.id === editingId) : undefined;
+  // Fallback for tasks not in the today cache (e.g. opened from search — could be any date).
+  const taskQuery = useTask(editingId);
+  const existing = cacheHit ?? taskQuery.data;
+
+  // Still resolving the edit target: no cache hit yet, and the by-id fetch hasn't settled.
+  const isResolvingExisting = editingId != null && !existing && taskQuery.isLoading;
+  const resolveError = editingId != null && !existing && !taskQuery.isLoading && taskQuery.isError;
 
   const { data: categories } = useCategories();
   const createTask = useCreateTask();
@@ -127,6 +136,15 @@ export default function TaskEditorScreen() {
         )}
       </View>
 
+      {isResolvingExisting ? (
+        <View style={styles.centerBox}>
+          <ActivityIndicator color={colors.primary} size="large" />
+        </View>
+      ) : resolveError ? (
+        <View style={styles.centerBox}>
+          <ErrorText>{apiErrorMessage(taskQuery.error)}</ErrorText>
+        </View>
+      ) : (
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
           <Card>
@@ -215,6 +233,7 @@ export default function TaskEditorScreen() {
           </Card>
         </ScrollView>
       </KeyboardAvoidingView>
+      )}
 
       {picker === 'date' ? (
         <DateTimePicker
@@ -255,6 +274,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: { color: colors.text, fontSize: 18, fontWeight: '700' },
   body: { padding: spacing(5), paddingTop: 0 },
+  centerBox: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing(6) },
   pickerField: {
     flexDirection: 'row',
     alignItems: 'center',

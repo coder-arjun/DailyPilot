@@ -47,6 +47,16 @@ export function useTodayTasks(date?: string) {
   });
 }
 
+/** Fetches a single task by id, regardless of which day it's planned for — used when a
+ * task isn't in the today cache (e.g. opened from search). */
+export function useTask(id: number | null) {
+  return useQuery({
+    queryKey: ['task', id] as const,
+    queryFn: async () => (await api.get<TaskDto>(`/tasks/${id}`)).data,
+    enabled: id != null,
+  });
+}
+
 export function useCategories() {
   return useQuery({
     queryKey: keys.categories,
