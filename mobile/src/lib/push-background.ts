@@ -24,6 +24,26 @@ export function wasHandled(key: string): boolean {
   return recentlyHandled.has(key);
 }
 
+/** Speak and resolve only when done (or after a hard cap, staying inside the
+ *  ~30s Android headless-task budget). */
+function speakAndWait(text: string, timeoutMs = 25_000): Promise<void> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      try {
+        Speech.stop();
+      } catch {
+        // engine may already be gone
+      }
+      resolve();
+    }, timeoutMs);
+    const finish = () => {
+      clearTimeout(timer);
+      resolve();
+    };
+    Speech.speak(text, { language: 'en', onDone: finish, onStopped: finish, onError: finish });
+  });
+}
+
 type RemoteData = Record<string, unknown>;
 
 /** The FCM data payload can arrive at different nesting depths per platform/state. */
@@ -60,7 +80,10 @@ TaskManager.defineTask(BACKGROUND_NOTIFICATION_TASK, async ({ data, error }) => 
 
     if (payload.speak === '1') {
       const text = [title, body].filter(Boolean).join('. ');
-      if (text) Speech.speak(text, { language: 'en' });
+      // MUST await: in a headless (killed/locked) context the JS runtime is torn
+      // down as soon as this task resolves — fire-and-forget speech never gets to
+      // make a sound because the TTS engine is still initializing.
+      if (text) await speakAndWait(text);
     }
   } catch {
     // Never throw from a headless task.

@@ -85,11 +85,17 @@ public class TasksApiController : ApiControllerBase
         var task = await _tasks.GetAsync(CurrentUserId, id);
         if (task is null) return ApiError(404, "Task not found.");
 
+        // We mutate the tracked entity, so the service's own reschedule detection
+        // (which compares against the stored row) can never see a change — detect
+        // it here and re-arm the reminder so the new time can fire today.
+        var rescheduled = task.PlannedDate != planned || task.ReminderTime != reminder;
+
         task.Title = request.Title;
         task.Notes = request.Notes;
         task.PlannedDate = planned;
         task.DueTime = due;
         task.ReminderTime = reminder;
+        if (rescheduled) task.ReminderFiredOn = null;
         task.Priority = (Priority)request.Priority;
         task.CategoryId = request.CategoryId;
         task.EstimatedMinutes = request.EstimatedMinutes;
