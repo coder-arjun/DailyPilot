@@ -370,3 +370,4 @@ publish/
 # Uploaded task attachments (runtime user data)
 Storage/
 /CLAUDE.md
+.superpowers/

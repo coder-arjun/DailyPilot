@@ -27,6 +27,13 @@ export default function AppLayout() {
           tabBarIcon: ({ color, size }) => <Ionicons name="checkbox-outline" color={color} size={size} />,
         }}
       />
+      <Tabs.Screen
+        name="habits"
+        options={{
+          title: 'Habits',
+          tabBarIcon: ({ color, size }) => <Ionicons name="trophy-outline" color={color} size={size} />,
+        }}
+      />
       <Tabs.Screen name="task-editor" options={{ href: null }} />
     </Tabs>
   );
