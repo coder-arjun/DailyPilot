@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api/client';
+import { useAuthStore } from '@/stores/authStore';
 
 export type LevelInfoDto = {
   level: number;
@@ -61,6 +62,13 @@ export function useUpdateSettings() {
   return useMutation({
     mutationFn: async (body: AccountSettingsWrite) =>
       (await api.put<AccountDto>('/account/settings', body)).data,
-    onSuccess: (data) => qc.setQueryData(keys.account, data),
+    onSuccess: (data, variables) => {
+      qc.setQueryData(keys.account, data);
+      // Keep the auth store's user in sync so the display name updates anywhere it's
+      // read from (e.g. the Today greeting) without waiting on a refetch.
+      if (variables.displayName !== undefined && data.displayName) {
+        useAuthStore.getState().setDisplayName(data.displayName);
+      }
+    },
   });
 }

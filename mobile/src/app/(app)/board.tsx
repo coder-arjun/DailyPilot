@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Muted, Screen } from '@/components/ui';
@@ -17,6 +18,7 @@ const COLUMNS = [
 ] as const satisfies ReadonlyArray<{ key: keyof BoardDto; status: number; label: string; icon: string }>;
 
 export default function BoardScreen() {
+  const router = useRouter();
   const { data, isLoading, isError, error, refetch, isRefetching } = useBoard();
   const setStatus = useSetStatus();
   const [active, setActive] = useState<TaskDto | null>(null);
@@ -27,6 +29,9 @@ export default function BoardScreen() {
   return (
     <Screen>
       <View style={styles.header}>
+        <Pressable hitSlop={10} onPress={() => router.back()} accessibilityLabel="Back">
+          <Ionicons name="arrow-back" size={22} color={colors.text} />
+        </Pressable>
         <Text style={styles.title}>Board</Text>
       </View>
 
@@ -140,6 +145,9 @@ function BoardCard({ task, onPress }: { task: TaskDto; onPress: () => void }) {
 
 const styles = StyleSheet.create({
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing(3),
     paddingHorizontal: spacing(5),
     paddingTop: spacing(3),
     paddingBottom: spacing(3),

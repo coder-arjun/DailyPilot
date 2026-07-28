@@ -51,7 +51,7 @@ export function useTodayTasks(date?: string) {
  * task isn't in the today cache (e.g. opened from search). */
 export function useTask(id: number | null) {
   return useQuery({
-    queryKey: ['task', id] as const,
+    queryKey: ['tasks', 'byId', id] as const,
     queryFn: async () => (await api.get<TaskDto>(`/tasks/${id}`)).data,
     enabled: id != null,
   });
@@ -65,9 +65,18 @@ export function useCategories() {
   });
 }
 
+/** Invalidates task queries plus everything that surfaces task-derived data
+ * (dashboard stats, account/streak info, history log) so they don't go stale. */
+function invalidateTasksAndRelated(qc: ReturnType<typeof useQueryClient>) {
+  qc.invalidateQueries({ queryKey: ['tasks'] });
+  qc.invalidateQueries({ queryKey: ['dashboard'] });
+  qc.invalidateQueries({ queryKey: ['account'] });
+  qc.invalidateQueries({ queryKey: ['history'] });
+}
+
 function useInvalidateTasks() {
   const qc = useQueryClient();
-  return () => qc.invalidateQueries({ queryKey: ['tasks'] });
+  return () => invalidateTasksAndRelated(qc);
 }
 
 export function useCreateTask() {
@@ -113,7 +122,7 @@ export function useToggleComplete(date?: string) {
     onError: (_err, _task, ctx) => {
       if (ctx?.previous) qc.setQueryData(key, ctx.previous);
     },
-    onSettled: () => qc.invalidateQueries({ queryKey: ['tasks'] }),
+    onSettled: () => invalidateTasksAndRelated(qc),
   });
 }
 

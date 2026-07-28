@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
+import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button, Card, ErrorText, Input, Label, Muted, Screen } from '@/components/ui';
@@ -24,6 +25,7 @@ let nextStopId = 0;
 const newStop = (): Stop => ({ id: nextStopId++, text: '', point: null, error: null, resolving: false });
 
 export default function RoutePlannerScreen() {
+  const router = useRouter();
   const resolvePlace = useResolvePlace();
 
   const [you, setYou] = useState<ResolvedPlace | null>(null);
@@ -133,8 +135,13 @@ export default function RoutePlannerScreen() {
 
   return (
     <Screen>
-      <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+      <View style={styles.header}>
+        <Pressable hitSlop={10} onPress={() => router.back()} accessibilityLabel="Back">
+          <Ionicons name="arrow-back" size={22} color={colors.text} />
+        </Pressable>
         <Text style={styles.title}>Route Planner</Text>
+      </View>
+      <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
         <Muted>Compare stops by straight-line distance and open the ranked route in Google Maps.</Muted>
 
         <Card style={styles.card}>
@@ -241,8 +248,16 @@ export default function RoutePlannerScreen() {
 }
 
 const styles = StyleSheet.create({
-  body: { padding: spacing(5) },
-  title: { color: colors.text, fontSize: 24, fontWeight: '800', marginBottom: spacing(1.5) },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing(3),
+    paddingHorizontal: spacing(5),
+    paddingTop: spacing(3),
+    paddingBottom: spacing(1),
+  },
+  body: { padding: spacing(5), paddingTop: spacing(1.5) },
+  title: { color: colors.text, fontSize: 24, fontWeight: '800' },
   card: { marginTop: spacing(4) },
   stopHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   chip: {

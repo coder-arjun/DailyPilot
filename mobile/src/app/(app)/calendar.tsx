@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { Muted, Screen } from '@/components/ui';
 import { apiErrorMessage } from '@/lib/api/client';
 import { theme } from '@/lib/theme';
@@ -42,7 +42,7 @@ export default function CalendarScreen() {
   const [selected, setSelected] = useState(todayIso);
 
   const key = monthKey(year, month);
-  const { data, isLoading, isError, error } = useCalendarMonth(key);
+  const { data, isLoading, isError, error, refetch, isRefetching } = useCalendarMonth(key);
   const toggle = useToggleComplete();
 
   const dayLookup = useMemo(() => {
@@ -164,6 +164,9 @@ export default function CalendarScreen() {
         keyExtractor={(t) => String(t.id)}
         contentContainerStyle={styles.list}
         ItemSeparatorComponent={() => <View style={{ height: spacing(2.5) }} />}
+        refreshControl={
+          <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />
+        }
         renderItem={({ item }) => (
           <TaskRow
             task={item}

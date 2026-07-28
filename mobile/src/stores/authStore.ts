@@ -2,6 +2,7 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { create } from 'zustand';
 import { config } from '@/lib/config';
+import { queryClient } from '@/lib/queryClient';
 
 const REFRESH_KEY = 'daypilot_refresh_token';
 const ACCESS_KEY = 'daypilot_access_token';
@@ -38,6 +39,7 @@ type AuthState = {
   register: (fields: RegisterFields) => Promise<void>;
   refresh: () => Promise<void>;
   logout: () => Promise<void>;
+  setDisplayName: (name: string) => void;
 };
 
 /** Interceptor-free client — used for auth calls so a 401 here can never recurse. */
@@ -70,6 +72,8 @@ export const useAuthStore = create<AuthState>((set, get) => {
     await SecureStore.deleteItemAsync(REFRESH_KEY);
     await SecureStore.deleteItemAsync(ACCESS_KEY);
     set({ status: 'signedOut', user: null, accessToken: null });
+    // No cached data should survive a logout/auth-failure into the next session.
+    queryClient.clear();
   }
 
   return {
@@ -136,6 +140,10 @@ export const useAuthStore = create<AuthState>((set, get) => {
         }
       }
       await clearTokens();
+    },
+
+    setDisplayName: (name) => {
+      set((s) => (s.user ? { user: { ...s.user, displayName: name } } : {}));
     },
   };
 });

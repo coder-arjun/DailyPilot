@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { Button, Muted, Screen } from '@/components/ui';
 import { apiErrorMessage } from '@/lib/api/client';
 import { theme } from '@/lib/theme';
@@ -34,12 +35,16 @@ function relativeTime(iso: string): string {
 }
 
 export default function HistoryScreen() {
+  const router = useRouter();
   const [page, setPage] = useState(1);
-  const { data, isLoading, isError, error, isFetching } = useHistory(page);
+  const { data, isLoading, isError, error, isFetching, isRefetching, refetch } = useHistory(page);
 
   return (
     <Screen>
       <View style={styles.header}>
+        <Pressable hitSlop={10} onPress={() => router.back()} accessibilityLabel="Back">
+          <Ionicons name="arrow-back" size={22} color={colors.text} />
+        </Pressable>
         <Text style={styles.title}>History</Text>
       </View>
 
@@ -48,6 +53,9 @@ export default function HistoryScreen() {
         keyExtractor={(h) => String(h.id)}
         contentContainerStyle={styles.list}
         ItemSeparatorComponent={() => <View style={{ height: spacing(2.5) }} />}
+        refreshControl={
+          <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />
+        }
         renderItem={({ item }) => <HistoryRow item={item} />}
         ListEmptyComponent={
           <View style={styles.empty}>
@@ -112,6 +120,9 @@ function HistoryRow({ item }: { item: TaskHistoryDto }) {
 
 const styles = StyleSheet.create({
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing(3),
     paddingHorizontal: spacing(5),
     paddingTop: spacing(3),
     paddingBottom: spacing(4),

@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import React, { useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -23,6 +24,7 @@ let nextMessageId = 0;
 const makeId = () => String(nextMessageId++);
 
 export default function AssistantScreen() {
+  const router = useRouter();
   const sendChat = useSendChat();
   const [messages, setMessages] = useState<ChatMessage[]>([
     { id: makeId(), role: 'assistant', text: 'Tell me what you need to do, and I’ll turn it into a task.' },
@@ -53,6 +55,9 @@ export default function AssistantScreen() {
   return (
     <Screen>
       <View style={styles.header}>
+        <Pressable hitSlop={10} onPress={() => router.back()} accessibilityLabel="Back">
+          <Ionicons name="arrow-back" size={22} color={colors.text} />
+        </Pressable>
         <Text style={styles.title}>Assistant</Text>
       </View>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -105,7 +110,14 @@ export default function AssistantScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { paddingHorizontal: spacing(5), paddingTop: spacing(3), paddingBottom: spacing(2) },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing(3),
+    paddingHorizontal: spacing(5),
+    paddingTop: spacing(3),
+    paddingBottom: spacing(2),
+  },
   title: { color: colors.text, fontSize: 24, fontWeight: '800' },
   list: { padding: spacing(5), paddingBottom: spacing(3), flexGrow: 1 },
   bubbleRow: { flexDirection: 'row', marginBottom: spacing(3) },

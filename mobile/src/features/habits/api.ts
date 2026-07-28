@@ -26,6 +26,15 @@ const keys = {
   habits: ['habits'] as const,
 };
 
+/** Invalidates habit queries plus everything that surfaces habit-derived data
+ * (dashboard stats, account/streak info, history log) so they don't go stale. */
+function invalidateHabitsAndRelated(qc: ReturnType<typeof useQueryClient>) {
+  qc.invalidateQueries({ queryKey: keys.habits });
+  qc.invalidateQueries({ queryKey: ['dashboard'] });
+  qc.invalidateQueries({ queryKey: ['account'] });
+  qc.invalidateQueries({ queryKey: ['history'] });
+}
+
 export function useHabits() {
   return useQuery({
     queryKey: keys.habits,
@@ -37,7 +46,7 @@ export function useCreateHabit() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (body: HabitWrite) => (await api.post<HabitDto>('/habits', body)).data,
-    onSuccess: () => qc.invalidateQueries({ queryKey: keys.habits }),
+    onSuccess: () => invalidateHabitsAndRelated(qc),
   });
 }
 
@@ -58,7 +67,7 @@ export function useToggleHabitCheckin() {
     onError: (_err, _habit, ctx) => {
       if (ctx?.previous) qc.setQueryData(keys.habits, ctx.previous);
     },
-    onSettled: () => qc.invalidateQueries({ queryKey: keys.habits }),
+    onSettled: () => invalidateHabitsAndRelated(qc),
   });
 }
 

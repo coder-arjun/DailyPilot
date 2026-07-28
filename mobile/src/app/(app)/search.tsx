@@ -31,6 +31,9 @@ export default function SearchScreen() {
   return (
     <Screen>
       <View style={styles.header}>
+        <Pressable hitSlop={10} onPress={() => router.back()} accessibilityLabel="Back">
+          <Ionicons name="arrow-back" size={22} color={colors.text} />
+        </Pressable>
         <Text style={styles.title}>Search</Text>
       </View>
 
@@ -158,6 +161,9 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 const styles = StyleSheet.create({
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing(3),
     paddingHorizontal: spacing(5),
     paddingTop: spacing(3),
     paddingBottom: spacing(2),

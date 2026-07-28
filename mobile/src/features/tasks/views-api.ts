@@ -35,6 +35,11 @@ export function useSetStatus() {
   return useMutation({
     mutationFn: async ({ id, status }: { id: number; status: number }) =>
       (await api.post<TaskDto>(`/tasks/${id}/status`, { status })).data,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tasks'] });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
+      qc.invalidateQueries({ queryKey: ['account'] });
+      qc.invalidateQueries({ queryKey: ['history'] });
+    },
   });
 }

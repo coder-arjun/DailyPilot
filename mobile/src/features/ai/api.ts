@@ -9,6 +9,11 @@ export function useSendChat() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (message: string) => (await api.post<ChatReply>('/ai/chat', { message })).data,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tasks'] });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
+      qc.invalidateQueries({ queryKey: ['account'] });
+      qc.invalidateQueries({ queryKey: ['history'] });
+    },
   });
 }
