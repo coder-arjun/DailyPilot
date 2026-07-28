@@ -37,6 +37,13 @@ export default function TodayScreen() {
         <View style={styles.headerActions}>
           <Pressable
             hitSlop={8}
+            accessibilityLabel="Board view"
+            onPress={() => router.push('/(app)/board')}
+          >
+            <Ionicons name="grid-outline" size={22} color={colors.muted} />
+          </Pressable>
+          <Pressable
+            hitSlop={8}
             accessibilityLabel="Search"
             onPress={() => router.push('/(app)/search')}
           >

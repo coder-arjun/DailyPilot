@@ -35,6 +35,13 @@ export default function AppLayout() {
         }}
       />
       <Tabs.Screen
+        name="calendar"
+        options={{
+          title: 'Calendar',
+          tabBarIcon: ({ color, size }) => <Ionicons name="calendar-outline" color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
         name="dashboard"
         options={{
           title: 'Dashboard',
@@ -43,6 +50,7 @@ export default function AppLayout() {
       />
       <Tabs.Screen name="task-editor" options={{ href: null }} />
       <Tabs.Screen name="search" options={{ href: null }} />
+      <Tabs.Screen name="board" options={{ href: null }} />
       <Tabs.Screen name="history" options={{ href: null }} />
     </Tabs>
   );
