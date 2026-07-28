@@ -34,13 +34,22 @@ export default function TodayScreen() {
           <Text style={styles.hello}>Hi {user?.displayName?.split(' ')[0] ?? 'there'}</Text>
           <Muted>{today}</Muted>
         </View>
-        {tasks ? (
-          <View style={styles.counter}>
-            <Text style={styles.counterText}>
-              {done.length}/{tasks.length}
-            </Text>
-          </View>
-        ) : null}
+        <View style={styles.headerActions}>
+          <Pressable
+            hitSlop={8}
+            accessibilityLabel="Search"
+            onPress={() => router.push('/(app)/search')}
+          >
+            <Ionicons name="search" size={22} color={colors.muted} />
+          </Pressable>
+          {tasks ? (
+            <View style={styles.counter}>
+              <Text style={styles.counterText}>
+                {done.length}/{tasks.length}
+              </Text>
+            </View>
+          ) : null}
+        </View>
       </View>
 
       <FlatList
@@ -97,6 +106,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing(4),
   },
   hello: { color: colors.text, fontSize: 24, fontWeight: '800' },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing(3) },
   counter: {
     backgroundColor: colors.surface,
     borderColor: colors.border,
