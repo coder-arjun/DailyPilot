@@ -48,10 +48,19 @@ export default function AppLayout() {
           tabBarIcon: ({ color, size }) => <Ionicons name="stats-chart-outline" color={color} size={size} />,
         }}
       />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: 'Settings',
+          tabBarIcon: ({ color, size }) => <Ionicons name="settings-outline" color={color} size={size} />,
+        }}
+      />
       <Tabs.Screen name="task-editor" options={{ href: null }} />
       <Tabs.Screen name="search" options={{ href: null }} />
       <Tabs.Screen name="board" options={{ href: null }} />
       <Tabs.Screen name="history" options={{ href: null }} />
+      <Tabs.Screen name="route-planner" options={{ href: null }} />
+      <Tabs.Screen name="assistant" options={{ href: null }} />
     </Tabs>
   );
 }

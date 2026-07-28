@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -28,6 +29,7 @@ const toTimeString = (d: Date) =>
   `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 
 export default function SettingsScreen() {
+  const router = useRouter();
   const { data: account, isLoading, isError, error } = useAccount();
   const updateSettings = useUpdateSettings();
 
@@ -193,6 +195,22 @@ export default function SettingsScreen() {
           {saved && !saveError ? <Muted>Saved.</Muted> : null}
           <View style={{ height: spacing(3) }} />
           <Button title="Save changes" onPress={onSave} loading={updateSettings.isPending} />
+        </Card>
+
+        <Card style={styles.card}>
+          <Text style={styles.sectionTitle}>Tools</Text>
+          <Pressable style={styles.linkRow} onPress={() => router.push('/(app)/route-planner')}>
+            <Ionicons name="navigate-outline" size={16} color={colors.primary} />
+            <Text style={styles.linkText}>Route Planner</Text>
+          </Pressable>
+          <Pressable style={styles.linkRow} onPress={() => router.push('/(app)/assistant')}>
+            <Ionicons name="sparkles-outline" size={16} color={colors.primary} />
+            <Text style={styles.linkText}>Assistant (quick add)</Text>
+          </Pressable>
+          <Pressable style={styles.linkRow} onPress={() => router.push('/(app)/history')}>
+            <Ionicons name="time-outline" size={16} color={colors.primary} />
+            <Text style={styles.linkText}>Task history</Text>
+          </Pressable>
         </Card>
 
         <Card style={styles.card}>
