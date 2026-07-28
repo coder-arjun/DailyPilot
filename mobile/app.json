@@ -4,7 +4,7 @@
     "slug": "daypilot",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/daypilot-logo.png",
     "scheme": "daypilot",
     "userInterfaceStyle": "dark",
     "backgroundColor": "#0a0f1d",
@@ -13,9 +13,7 @@
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#0a0f1d",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "foregroundImage": "./assets/images/daypilot-logo-maskable.png"
       },
       "predictiveBackGestureEnabled": false
     },
@@ -29,8 +27,8 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#0a0f1d",
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 120
+          "image": "./assets/images/daypilot-logo.png",
+          "imageWidth": 140
         }
       ],
       "expo-secure-store",

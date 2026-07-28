@@ -18,7 +18,10 @@ public interface IReminderDispatchService
 /// </summary>
 public class ReminderDispatchService : IReminderDispatchService
 {
-    private static readonly TimeSpan Grace = TimeSpan.FromSeconds(60);
+    // Fire in the reminder's own minute: the per-minute job ticks seconds after the
+    // boundary, so any positive grace pushes delivery to the NEXT run (+1 min).
+    // (Was 60s to let the web's in-app alarm win; native push must not wait.)
+    private static readonly TimeSpan Grace = TimeSpan.Zero;
     private static readonly TimeSpan MaxLate = TimeSpan.FromHours(2);
 
     private readonly ApplicationDbContext _db;

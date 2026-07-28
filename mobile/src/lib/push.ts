@@ -1,7 +1,9 @@
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
+import * as Speech from 'expo-speech';
 import { Platform } from 'react-native';
 import { api } from '@/lib/api/client';
+import { queryClient } from '@/lib/queryClient';
 
 /** Foreground presentation: reminders should still show as a banner. */
 Notifications.setNotificationHandler({
@@ -39,6 +41,9 @@ export async function registerForPushAsync(): Promise<void> {
       importance: Notifications.AndroidImportance.MAX,
       vibrationPattern: [0, 250, 250, 250],
       lightColor: '#6366F1',
+      // Full content on the lock screen — reminders must be visible when locked.
+      lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+      bypassDnd: false,
     });
   }
 
@@ -60,6 +65,34 @@ export async function unregisterPushAsync(): Promise<void> {
   } catch {
     // token cleanup is best-effort; server also prunes dead tokens on send
   }
+}
+
+type AccountShape = { settings?: { speakReminders?: boolean } } | undefined;
+
+async function shouldSpeak(): Promise<boolean> {
+  const cached = queryClient.getQueryData<AccountShape>(['account']);
+  if (cached?.settings?.speakReminders !== undefined) return !!cached.settings.speakReminders;
+  try {
+    const { data } = await api.get<AccountShape>('/account');
+    return !!data?.settings?.speakReminders;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Web parity for "speak reminders": while the app is open, read the reminder
+ * aloud when it arrives (the web does the same only while a tab is open —
+ * when the app is killed, the system shows the notification silently spoken-wise).
+ */
+export function watchSpokenReminders(): () => void {
+  const sub = Notifications.addNotificationReceivedListener(async (notification) => {
+    if (!(await shouldSpeak())) return;
+    const { title, body } = notification.request.content;
+    const text = [title, body].filter(Boolean).join('. ');
+    if (text) Speech.speak(text, { language: 'en' });
+  });
+  return () => sub.remove();
 }
 
 /** Keep the server current when FCM rotates the token. */

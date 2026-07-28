@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Redirect, Tabs, useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
-import { registerForPushAsync, watchPushTokenRotation, wireNotificationTaps } from '@/lib/push';
+import { registerForPushAsync, watchPushTokenRotation, watchSpokenReminders, wireNotificationTaps } from '@/lib/push';
 import { theme } from '@/lib/theme';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -15,12 +15,14 @@ export default function AppLayout() {
     let disposeRotation: (() => void) | undefined;
     registerForPushAsync().catch(() => {});
     disposeRotation = watchPushTokenRotation();
+    const disposeSpeech = watchSpokenReminders();
     wireNotificationTaps((route) => router.push(route as never)).then((d) => {
       disposeTaps = d;
     });
     return () => {
       disposeTaps?.();
       disposeRotation?.();
+      disposeSpeech();
     };
   }, [status, router]);
 

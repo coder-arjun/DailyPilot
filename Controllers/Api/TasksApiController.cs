@@ -11,16 +11,24 @@ public class TasksApiController : ApiControllerBase
 {
     private readonly ITaskService _tasks;
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly ICarryForwardService _carryForward;
 
-    public TasksApiController(ITaskService tasks, UserManager<ApplicationUser> userManager)
+    public TasksApiController(ITaskService tasks, UserManager<ApplicationUser> userManager,
+        ICarryForwardService carryForward)
     {
         _tasks = tasks;
         _userManager = userManager;
+        _carryForward = carryForward;
     }
 
     [HttpGet]
     public async Task<IActionResult> List([FromQuery] string? date)
     {
+        // Roll unfinished tasks from previous days into today — the web Today page
+        // does this on load (TasksController.Index); the app must match or
+        // carried-forward tasks only appear after visiting the website.
+        try { await _carryForward.RunForUserAsync(CurrentUserId); } catch { /* never block the list */ }
+
         DateOnly day;
         if (string.IsNullOrWhiteSpace(date))
         {
