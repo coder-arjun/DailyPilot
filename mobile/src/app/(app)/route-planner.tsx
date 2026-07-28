@@ -30,6 +30,13 @@ export default function RoutePlannerScreen() {
   const [locating, setLocating] = useState(false);
   const [locateError, setLocateError] = useState('');
 
+  // Manual fallback for the start point — always available (web parity with
+  // Views/RoutePlanner/Index.cshtml's "rpYouManual"), resolved through the same
+  // server endpoint as stops, and emphasized when geolocation fails.
+  const [manualText, setManualText] = useState('');
+  const [manualResolving, setManualResolving] = useState(false);
+  const [manualError, setManualError] = useState('');
+
   const [stops, setStops] = useState<Stop[]>(() => [newStop(), newStop()]);
 
   async function onUseLocation() {
@@ -38,16 +45,41 @@ export default function RoutePlannerScreen() {
     try {
       const perm = await Location.requestForegroundPermissionsAsync();
       if (perm.status !== 'granted') {
-        setLocateError('Location permission was denied — allow it in your device settings to use this.');
+        setLocateError('Location permission was denied — allow it in your device settings, or enter your start manually below.');
         return;
       }
       const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
       setYou({ lat: pos.coords.latitude, lng: pos.coords.longitude, label: 'Your location' });
+      setManualText('');
+      setManualError('');
     } catch {
-      setLocateError('Couldn’t get a fix on your location — try again.');
+      setLocateError('Couldn’t get a fix on your location — try again, or enter your start manually below.');
     } finally {
       setLocating(false);
     }
+  }
+
+  async function resolveYouManually() {
+    const text = manualText.trim();
+    if (!text || manualResolving) return;
+    setManualError('');
+    setManualResolving(true);
+    try {
+      const point = await resolvePlace.mutateAsync(text);
+      setYou({ ...point, label: point.label || 'Your start' });
+      setLocateError('');
+      setManualResolving(false);
+    } catch (e) {
+      setManualResolving(false);
+      setManualError(apiErrorMessage(e));
+    }
+  }
+
+  function clearYou() {
+    setYou(null);
+    setLocateError('');
+    setManualError('');
+    setManualText('');
   }
 
   function updateStop(id: number, patch: Partial<Stop>) {
@@ -108,7 +140,7 @@ export default function RoutePlannerScreen() {
         <Card style={styles.card}>
           <Label>Your location</Label>
           {you ? (
-            <Pressable style={styles.chip} onPress={() => setYou(null)}>
+            <Pressable style={styles.chip} onPress={clearYou}>
               <Ionicons name="checkmark-circle" size={16} color={colors.success} />
               <Text style={styles.chipText}>{you.label}</Text>
               <Text style={styles.chipCoords}>
@@ -116,9 +148,26 @@ export default function RoutePlannerScreen() {
               </Text>
             </Pressable>
           ) : (
-            <Button title="Use my location" variant="ghost" onPress={onUseLocation} loading={locating} />
+            <>
+              <Button title="Use my location" variant="ghost" onPress={onUseLocation} loading={locating} />
+              <ErrorText>{locateError}</ErrorText>
+
+              <Text style={[styles.manualHeading, locateError ? styles.manualHeadingEmphasis : null]}>
+                {locateError ? 'Enter your start manually instead' : 'Or enter your start manually'}
+              </Text>
+              <Input
+                value={manualText}
+                onChangeText={setManualText}
+                onBlur={resolveYouManually}
+                onSubmitEditing={resolveYouManually}
+                placeholder="Paste a Google Maps link or lat,lng"
+                autoCapitalize="none"
+                style={locateError ? styles.manualInputEmphasis : undefined}
+              />
+              {manualResolving ? <Muted>Resolving…</Muted> : null}
+              <ErrorText>{manualError}</ErrorText>
+            </>
           )}
-          <ErrorText>{locateError}</ErrorText>
         </Card>
 
         {stops.map((stop, i) => (
@@ -209,6 +258,9 @@ const styles = StyleSheet.create({
   },
   chipText: { color: colors.text, fontWeight: '600', fontSize: 14, flexShrink: 1 },
   chipCoords: { color: colors.muted, fontSize: 12, marginLeft: 'auto' },
+  manualHeading: { color: colors.muted, fontSize: 13, fontWeight: '600', marginTop: spacing(3), marginBottom: spacing(1.5) },
+  manualHeadingEmphasis: { color: colors.accent, fontWeight: '700' },
+  manualInputEmphasis: { borderColor: colors.accent },
   sectionTitle: { color: colors.text, fontSize: 16, fontWeight: '700', marginBottom: spacing(2) },
   rankRow: {
     flexDirection: 'row',
