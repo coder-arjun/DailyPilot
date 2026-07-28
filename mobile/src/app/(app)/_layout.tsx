@@ -81,6 +81,8 @@ export default function AppLayout() {
       <Tabs.Screen name="history" options={{ href: null }} />
       <Tabs.Screen name="route-planner" options={{ href: null }} />
       <Tabs.Screen name="assistant" options={{ href: null }} />
+      <Tabs.Screen name="invitations" options={{ href: null }} />
+      <Tabs.Screen name="invite-list" options={{ href: null }} />
     </Tabs>
   );
 }

@@ -215,6 +215,10 @@ export default function SettingsScreen() {
             <Ionicons name="sparkles-outline" size={16} color={colors.primary} />
             <Text style={styles.linkText}>Assistant (quick add)</Text>
           </Pressable>
+          <Pressable style={styles.linkRow} onPress={() => router.push('/(app)/invitations')}>
+            <Ionicons name="mail-outline" size={16} color={colors.primary} />
+            <Text style={styles.linkText}>Invitations</Text>
+          </Pressable>
           <Pressable style={styles.linkRow} onPress={() => router.push('/(app)/history')}>
             <Ionicons name="time-outline" size={16} color={colors.primary} />
             <Text style={styles.linkText}>Task history</Text>
@@ -224,7 +228,7 @@ export default function SettingsScreen() {
         <Card style={styles.card}>
           <Text style={styles.sectionTitle}>More on the web</Text>
           <Muted>
-            Attachments, invitations, and workspaces aren&rsquo;t available in the app yet — manage
+            Attachments and workspaces aren&rsquo;t available in the app yet — manage
             them from a browser at:
           </Muted>
           <Pressable style={styles.linkRow} onPress={() => Linking.openURL(siteUrl)}>

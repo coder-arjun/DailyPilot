@@ -18,6 +18,8 @@ npx expo prebuild --platform android --clean --no-install
 if ($LASTEXITCODE -ne 0) { throw 'prebuild failed' }
 
 Write-Host '== patch signing config + ABI filter =='
+# prebuild --clean wipes local.properties; the SDK on this machine lives here.
+Set-Content "$mobile\android\local.properties" 'sdk.dir=C:/Android/sdk'
 # ABIs: phones only (halves the APK vs all four)
 Add-Content "$mobile\android\gradle.properties" "`nreactNativeArchitectures=armeabi-v7a,arm64-v8a"
 
