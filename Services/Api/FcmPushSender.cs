@@ -45,6 +45,12 @@ public class FcmPushSender : IFcmPushSender
             _initAttempted = true;
 
             var path = config["Fcm:CredentialPath"];
+            if (!string.IsNullOrWhiteSpace(path) && !File.Exists(path))
+            {
+                // Relative paths can miss when the process CWD isn't the content root (IIS).
+                var fromBase = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, path));
+                if (File.Exists(fromBase)) path = fromBase;
+            }
             if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
             {
                 logger.LogInformation("FCM disabled: credential file not configured/found ({Path}).", path ?? "<null>");

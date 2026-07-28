@@ -10,6 +10,7 @@
     "backgroundColor": "#0a0f1d",
     "android": {
       "package": "com.daypilot.app",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#0a0f1d",
         "foregroundImage": "./assets/images/android-icon-foreground.png",

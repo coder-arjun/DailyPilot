@@ -16,6 +16,7 @@ import {
 import { Button, Card, ErrorText, Input, Label, Muted, Screen } from '@/components/ui';
 import { apiErrorMessage } from '@/lib/api/client';
 import { config } from '@/lib/config';
+import { unregisterPushAsync } from '@/lib/push';
 import { theme } from '@/lib/theme';
 import { useAccount, useUpdateSettings } from '@/features/account/api';
 import { useAuthStore } from '@/stores/authStore';
@@ -77,7 +78,14 @@ export default function SettingsScreen() {
   function onLogout() {
     Alert.alert('Log out?', 'You can sign back in any time.', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Log out', style: 'destructive', onPress: () => useAuthStore.getState().logout() },
+      {
+        text: 'Log out',
+        style: 'destructive',
+        onPress: async () => {
+          await unregisterPushAsync(); // needs auth — must run before tokens clear
+          await useAuthStore.getState().logout();
+        },
+      },
     ]);
   }
 

@@ -1,11 +1,29 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Redirect, Tabs } from 'expo-router';
-import React from 'react';
+import { Redirect, Tabs, useRouter } from 'expo-router';
+import React, { useEffect } from 'react';
+import { registerForPushAsync, watchPushTokenRotation, wireNotificationTaps } from '@/lib/push';
 import { theme } from '@/lib/theme';
 import { useAuthStore } from '@/stores/authStore';
 
 export default function AppLayout() {
   const status = useAuthStore((s) => s.status);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (status !== 'signedIn') return;
+    let disposeTaps: (() => void) | undefined;
+    let disposeRotation: (() => void) | undefined;
+    registerForPushAsync().catch(() => {});
+    disposeRotation = watchPushTokenRotation();
+    wireNotificationTaps((route) => router.push(route as never)).then((d) => {
+      disposeTaps = d;
+    });
+    return () => {
+      disposeTaps?.();
+      disposeRotation?.();
+    };
+  }, [status, router]);
+
   if (status !== 'signedIn') return <Redirect href="/(auth)/login" />;
 
   return (
