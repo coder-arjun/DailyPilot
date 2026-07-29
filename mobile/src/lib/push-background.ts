@@ -24,6 +24,14 @@ export function wasHandled(key: string): boolean {
   return recentlyHandled.has(key);
 }
 
+/** TTS engines can stall on pictographs (⏰/🔔 reminder prefixes) — speak clean text. */
+export function sanitizeForSpeech(text: string): string {
+  return text
+    .replace(/[\p{Extended_Pictographic}\u{FE0F}\u{200D}]/gu, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 /** One speak attempt. Resolves 'done' | 'never-started' | 'timeout'. */
 function trySpeak(text: string, capMs: number): Promise<'done' | 'never-started' | 'timeout'> {
   return new Promise((resolve) => {
@@ -59,7 +67,9 @@ function trySpeak(text: string, capMs: number): Promise<'done' | 'never-started'
  * able to permanently silence all future reminders. Stays inside the ~30s
  * Android headless-task budget.
  */
-export async function speakAndWait(text: string): Promise<void> {
+export async function speakAndWait(rawText: string): Promise<void> {
+  const text = sanitizeForSpeech(rawText);
+  if (!text) return;
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
       Speech.stop(); // clear anything a prior run left wedged
