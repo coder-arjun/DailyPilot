@@ -24,24 +24,52 @@ export function wasHandled(key: string): boolean {
   return recentlyHandled.has(key);
 }
 
-/** Speak and resolve only when done (or after a hard cap, staying inside the
- *  ~30s Android headless-task budget). */
-function speakAndWait(text: string, timeoutMs = 25_000): Promise<void> {
+/** One speak attempt. Resolves 'done' | 'never-started' | 'timeout'. */
+function trySpeak(text: string, capMs: number): Promise<'done' | 'never-started' | 'timeout'> {
   return new Promise((resolve) => {
-    const timer = setTimeout(() => {
-      try {
-        Speech.stop();
-      } catch {
-        // engine may already be gone
-      }
-      resolve();
-    }, timeoutMs);
-    const finish = () => {
-      clearTimeout(timer);
-      resolve();
+    let started = false;
+    let settled = false;
+    const settle = (result: 'done' | 'never-started' | 'timeout') => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(startTimer);
+      clearTimeout(capTimer);
+      resolve(result);
     };
-    Speech.speak(text, { language: 'en', onDone: finish, onStopped: finish, onError: finish });
+    // If the engine never even begins within 4s, it is wedged or unavailable.
+    const startTimer = setTimeout(() => {
+      if (!started) settle('never-started');
+    }, 4_000);
+    const capTimer = setTimeout(() => settle('timeout'), capMs);
+    Speech.speak(text, {
+      language: 'en',
+      onStart: () => {
+        started = true;
+      },
+      onDone: () => settle('done'),
+      onStopped: () => settle('done'),
+      onError: () => settle(started ? 'done' : 'never-started'),
+    });
   });
+}
+
+/**
+ * Robust spoken reminder: clears any wedged engine state first, then speaks,
+ * retrying once if the engine never starts. A previous stuck run must not be
+ * able to permanently silence all future reminders. Stays inside the ~30s
+ * Android headless-task budget.
+ */
+export async function speakAndWait(text: string): Promise<void> {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      Speech.stop(); // clear anything a prior run left wedged
+    } catch {
+      // engine not ready yet — fine
+    }
+    const result = await trySpeak(text, 20_000);
+    if (result !== 'never-started') return; // spoke (or at least ran to cap)
+    await new Promise((r) => setTimeout(r, 1_500)); // let the engine re-bind, then retry
+  }
 }
 
 type RemoteData = Record<string, unknown>;

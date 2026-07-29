@@ -1,9 +1,8 @@
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
-import * as Speech from 'expo-speech';
 import { Platform } from 'react-native';
 import { api } from '@/lib/api/client';
-import { wasHandled } from '@/lib/push-background';
+import { speakAndWait, wasHandled } from '@/lib/push-background';
 import { queryClient } from '@/lib/queryClient';
 
 /** Foreground presentation: reminders should still show as a banner. */
@@ -93,7 +92,7 @@ export function watchSpokenReminders(): () => void {
     if (wasHandled(`${title ?? ''}|${body ?? ''}`)) return;
     if (!(await shouldSpeak())) return;
     const text = [title, body].filter(Boolean).join('. ');
-    if (text) Speech.speak(text, { language: 'en' });
+    if (text) speakAndWait(text); // shared hardened path — self-heals a wedged engine
   });
   return () => sub.remove();
 }
