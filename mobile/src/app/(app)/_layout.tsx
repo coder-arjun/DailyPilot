@@ -69,6 +69,13 @@ export default function AppLayout() {
         }}
       />
       <Tabs.Screen
+        name="sleep"
+        options={{
+          title: 'Sleep',
+          tabBarIcon: ({ color, size }) => <Ionicons name="moon-outline" color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
         name="settings"
         options={{
           title: 'Settings',

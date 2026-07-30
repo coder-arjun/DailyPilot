@@ -17,6 +17,7 @@
         { icon: 'bi-people', label: 'Workspaces', url: '/Workspaces', keys: 'workspace team' },
         { icon: 'bi-clock-history', label: 'History', url: '/History', keys: 'history log' },
         { icon: 'bi-signpost-split', label: 'Route Planner', url: '/RoutePlanner', keys: 'route planner map directions nearest distance' },
+        { icon: 'bi-moon-stars', label: 'Sleep', url: '/Sleep', keys: 'sleep tracker score bedtime insights' },
         { icon: 'bi-gear', label: 'Settings', url: '/Settings', keys: 'settings profile preferences' }
     ];
 

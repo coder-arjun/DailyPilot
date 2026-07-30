@@ -92,6 +92,30 @@ Step 'delete task -> 404 on get' {
     catch { if ($_.Exception.Response.StatusCode.value__ -ne 404) { throw } }
 }
 
+Step 'sleep: evening upsert' {
+    $today = Get-Date -Format 'yyyy-MM-dd'
+    $e = Invoke-RestMethod -Uri "$api/sleep/entry" -Method Put -ContentType 'application/json' -Headers @{ Authorization = "Bearer $token" } -Body (@{ date = $today; bedTime = '23:00'; phoneBeforeBed = $true } | ConvertTo-Json)
+    if ($e.estimatedSleepTime -ne '23:15') { throw 'default sleep time not applied' }
+    if ($e.isComplete) { throw 'should be incomplete without morning' }
+}
+
+Step 'sleep: morning completes the entry' {
+    $today = Get-Date -Format 'yyyy-MM-dd'
+    $e = Invoke-RestMethod -Uri "$api/sleep/entry" -Method Put -ContentType 'application/json' -Headers @{ Authorization = "Bearer $token" } -Body (@{ date = $today; bedTime = '23:00'; wakeTime = '07:00'; quality = 8 } | ConvertTo-Json)
+    if (-not $e.isComplete) { throw 'entry should be complete' }
+}
+
+Step 'sleep: dashboard reports the night' {
+    $d = GetJson "$api/sleep/dashboard" $token
+    if ($null -eq $d.todayDurationMinutes) { throw 'no today duration' }
+    if ($d.completeNightCount -lt 1) { throw 'night not counted' }
+}
+
+Step 'sleep: insights endpoint answers' {
+    $i = GetJson "$api/sleep/insights" $token
+    if ($null -eq $i.weekly) { throw 'weekly missing' }
+}
+
 Step 'logout revokes refresh token' {
     PostJson "$api/auth/logout" @{ refreshToken = $rotated.refreshToken } | Out-Null
     try { PostJson "$api/auth/refresh" @{ refreshToken = $rotated.refreshToken }; throw 'expected 401' }
