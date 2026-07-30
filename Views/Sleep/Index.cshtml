@@ -1,0 +1,228 @@
+@model SleepPageViewModel
+@{
+    ViewData["Title"] = "Sleep";
+    var d = Model.Dashboard;
+}
+
+<div class="sl-page">
+    <header class="sl-head">
+        <div class="sl-eyebrow"><i class="bi bi-moon-stars"></i> Sleep</div>
+        <h1 class="sl-title">Your night, <span class="sl-title-grad">decoded.</span></h1>
+        <p class="sl-sub">Log tonight's bed time and this morning's wake-up — everything else, DayPilot works out for you. Simple. Minimal. Beautiful.</p>
+    </header>
+
+    @if (TempData["Success"] is string success)
+    {
+        <div class="alert alert-success sl-alert" role="alert">@success</div>
+    }
+    @if (TempData["Error"] is string error)
+    {
+        <div class="alert alert-danger sl-alert" role="alert">@error</div>
+    }
+
+    <section class="sl-hero" aria-labelledby="slHeroHead">
+        @if (d.TodayScore is int score)
+        {
+            <div class="sl-hero-top">
+                <div>
+                    <div class="sl-hero-label" id="slHeroHead">Today's sleep</div>
+                    <div class="sl-hero-duration">@SleepPageViewModel.Fmt(d.TodayDurationMinutes)</div>
+                </div>
+            </div>
+            <div class="sl-stars" aria-label="@Model.StarCount out of 5 stars">
+                @for (var i = 1; i <= 5; i++)
+                {
+                    <i class="bi @(i <= Model.StarCount ? "bi-star-fill" : "bi-star")"></i>
+                }
+            </div>
+            <div class="sl-score-row">
+                <span class="sl-score">Score: @score/100</span>
+                <span class="sl-band sl-band-@d.TodayBand?.ToLowerInvariant()">@d.TodayBand</span>
+            </div>
+        }
+        else
+        {
+            <div class="sl-hero-empty">
+                <i class="bi bi-moon-stars" aria-hidden="true"></i>
+                <p id="slHeroHead">No score yet today — log this morning's wake time and quality below.</p>
+            </div>
+        }
+    </section>
+
+    <div class="sl-stats">
+        <div class="sl-stat">
+            <div class="sl-stat-label">Average this week</div>
+            <div class="sl-stat-value">@SleepPageViewModel.Fmt(d.AverageDurationMinutes)</div>
+            @if (d.AverageDurationMinutes is null)
+            {
+                <div class="sl-stat-hint">Log 2+ nights</div>
+            }
+        </div>
+        <div class="sl-stat">
+            <div class="sl-stat-label">Sleep debt</div>
+            @if (d.CompleteNightCount == 0)
+            {
+                <div class="sl-stat-value">—</div>
+                <div class="sl-stat-hint">Log a night</div>
+            }
+            else
+            {
+                <div class="sl-stat-value">@SleepPageViewModel.Fmt(d.SleepDebtMinutes)</div>
+                <div class="sl-stat-hint">@(d.SleepDebtMinutes == 0 ? "On track" : "over last 7 nights")</div>
+            }
+        </div>
+        <div class="sl-stat">
+            <div class="sl-stat-label">Consistency</div>
+            <div class="sl-stat-value">@(d.ConsistencyPct is int c ? $"{c}%" : "—")</div>
+            @if (d.ConsistencyPct is null)
+            {
+                <div class="sl-stat-hint">Log 3+ nights</div>
+            }
+        </div>
+        <div class="sl-stat">
+            <div class="sl-stat-label">Ideal bed time</div>
+            <div class="sl-stat-value">@SleepPageViewModel.FmtTime(d.IdealBedTime)</div>
+            @if (d.IdealBedTime is null)
+            {
+                <div class="sl-stat-hint">Log 2+ nights</div>
+            }
+        </div>
+    </div>
+
+    <div class="sl-forms">
+        <section class="sl-card sl-form-card" id="slEveningCard" aria-labelledby="slEveningHead">
+            <h2 class="sl-card-title" id="slEveningHead"><i class="bi bi-moon"></i> Evening</h2>
+            <p class="sl-form-hint">Saves to the morning of @Model.EveningTargetDate.ToString("ddd, dd MMM").</p>
+            <form asp-controller="Sleep" asp-action="SaveEvening" method="post" class="sl-form">
+                @Html.AntiForgeryToken()
+                <div class="sl-field">
+                    <label class="sl-label" for="slBedTime">Bed time</label>
+                    <input type="time" class="form-control" id="slBedTime" name="bedTime" required
+                           value="@(Model.EveningEntry?.BedTime.ToString("HH:mm"))" />
+                </div>
+                <div class="sl-field">
+                    <label class="sl-label" for="slEstSleep">Estimated sleep time</label>
+                    <input type="time" class="form-control" id="slEstSleep" name="estimatedSleepTime"
+                           value="@(Model.EveningEntry?.EstimatedSleepTime.ToString("HH:mm"))" />
+                    <span class="sl-field-hint">Defaults to bed time + 15 min.</span>
+                </div>
+                <div class="form-check form-switch sl-switch">
+                    <input class="form-check-input" type="checkbox" role="switch" id="slPhone" name="phoneBeforeBed" value="true"
+                           checked="@(Model.EveningEntry?.PhoneBeforeBed == true)" />
+                    <label class="form-check-label" for="slPhone"><i class="bi bi-phone"></i> Used phone before bed</label>
+                </div>
+                <button type="submit" class="btn sl-save"><i class="bi bi-check-lg"></i> Save evening</button>
+            </form>
+        </section>
+
+        <section class="sl-card sl-form-card" id="slMorningCard" aria-labelledby="slMorningHead">
+            <h2 class="sl-card-title" id="slMorningHead"><i class="bi bi-brightness-high"></i> Morning</h2>
+            <p class="sl-form-hint">Saves to today, @Model.Today.ToString("ddd, dd MMM").</p>
+            <form asp-controller="Sleep" asp-action="SaveMorning" method="post" class="sl-form">
+                @Html.AntiForgeryToken()
+                <div class="sl-field">
+                    <label class="sl-label" for="slWakeTime">Wake time</label>
+                    <input type="time" class="form-control" id="slWakeTime" name="wakeTime" required
+                           value="@(Model.MorningEntry?.WakeTime?.ToString("HH:mm"))" />
+                </div>
+                <div class="sl-field">
+                    <label class="sl-label" for="slOutOfBed">Time out of bed</label>
+                    <input type="time" class="form-control" id="slOutOfBed" name="timeOutOfBed"
+                           value="@(Model.MorningEntry?.TimeOutOfBed?.ToString("HH:mm"))" />
+                    <span class="sl-field-hint">Defaults to wake time.</span>
+                </div>
+                <div class="sl-field">
+                    <label class="sl-label" for="slQuality">Sleep quality</label>
+                    <div class="sl-quality-row">
+                        <input type="range" class="form-range sl-quality" id="slQuality" name="quality"
+                               min="1" max="10" value="@(Model.MorningEntry?.Quality ?? 5)" />
+                        <span class="sl-quality-val" id="slQualityVal">@(Model.MorningEntry?.Quality ?? 5)</span>
+                    </div>
+                </div>
+                <div class="form-check form-switch sl-switch">
+                    <input class="form-check-input" type="checkbox" role="switch" id="slDream" name="dreamRemembered" value="true"
+                           checked="@(Model.MorningEntry?.DreamRemembered == true)" />
+                    <label class="form-check-label" for="slDream"><i class="bi bi-cloud-moon"></i> Remembered a dream</label>
+                </div>
+                <button type="submit" class="btn sl-save"><i class="bi bi-check-lg"></i> Save morning</button>
+            </form>
+        </section>
+    </div>
+
+    <section class="sl-card" aria-labelledby="slTrendHead">
+        <h2 class="sl-card-title" id="slTrendHead"><i class="bi bi-bar-chart-steps"></i> Last 14 nights</h2>
+        @if (d.Recent.Count == 0)
+        {
+            <div class="sl-bars-empty">Log a few nights to see your 14-day trend.</div>
+        }
+        else
+        {
+            <div class="sl-bars" role="img" aria-label="Sleep duration for the last 14 nights">
+                @foreach (var n in d.Recent)
+                {
+                    var pct = Math.Clamp(n.DurationMinutes / 600.0 * 100, 10, 100);
+                    var tint = n.Quality >= 8 ? "sl-bar-good" : n.Quality >= 5 ? "sl-bar-ok" : "sl-bar-low";
+                    <div class="sl-bar-col" title="@n.Date.ToString("ddd, dd MMM") · @SleepPageViewModel.Fmt(n.DurationMinutes) · quality @n.Quality/10">
+                        <div class="sl-bar @tint" style="height:@(pct.ToString("0.#"))%"></div>
+                        <span class="sl-bar-label">@n.Date.ToString("ddd").Substring(0, 1)</span>
+                    </div>
+                }
+            </div>
+        }
+    </section>
+
+    <section class="sl-card" aria-labelledby="slWeeklyHead">
+        <h2 class="sl-card-title" id="slWeeklyHead"><i class="bi bi-graph-up"></i> Weekly insights</h2>
+        <ul class="sl-insights">
+            @foreach (var line in Model.Weekly)
+            {
+                <li><i class="bi bi-dot"></i> @line</li>
+            }
+        </ul>
+    </section>
+
+    @if (Model.Personalized.Count > 0)
+    {
+        <section class="sl-card sl-personal" aria-labelledby="slPersonalHead">
+            <h2 class="sl-card-title" id="slPersonalHead"><i class="bi bi-stars"></i> Personalized insights</h2>
+            <ul class="sl-insights">
+                @foreach (var line in Model.Personalized)
+                {
+                    <li><i class="bi bi-lightbulb"></i> @line</li>
+                }
+            </ul>
+        </section>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var bed = document.getElementById('slBedTime');
+            var est = document.getElementById('slEstSleep');
+            if (bed && est) {
+                bed.addEventListener('change', function () {
+                    if (!est.value && bed.value) {
+                        var parts = bed.value.split(':').map(Number);
+                        var d = new Date(2000, 0, 1, parts[0], parts[1] + 15);
+                        est.value = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+                    }
+                });
+            }
+
+            var wake = document.getElementById('slWakeTime');
+            var outOfBed = document.getElementById('slOutOfBed');
+            if (wake && outOfBed) {
+                wake.addEventListener('change', function () {
+                    if (!outOfBed.value) outOfBed.value = wake.value;
+                });
+            }
+
+            var quality = document.getElementById('slQuality');
+            var qualityVal = document.getElementById('slQualityVal');
+            if (quality && qualityVal) {
+                quality.addEventListener('input', function () { qualityVal.textContent = quality.value; });
+            }
+        })();
+    </script>
+}
