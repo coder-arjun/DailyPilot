@@ -30,7 +30,11 @@ public class SleepApiController : ApiControllerBase
         [Range(1, 10)] int? Quality,
         bool? PhoneBeforeBed,
         bool? DreamRemembered,
-        [StringLength(500)] string? Notes);
+        [StringLength(500)] string? Notes,
+        // True when the caller synthesized BedTime rather than the user entering it
+        // (mirrors the web SaveMorning fallback). Omitted/null leaves the existing
+        // flag on the row untouched — see SleepService.UpsertAsync.
+        bool? BedTimeEstimated = null);
 
     [HttpPut("entry")]
     public async Task<IActionResult> Upsert(SleepEntryRequest request)
@@ -72,6 +76,7 @@ public class SleepApiController : ApiControllerBase
             PhoneBeforeBed = request.PhoneBeforeBed,
             DreamRemembered = request.DreamRemembered,
             Notes = request.Notes,
+            BedTimeEstimated = request.BedTimeEstimated,
         });
         return Ok(EntryDto(saved));
     }
@@ -153,6 +158,7 @@ public class SleepApiController : ApiControllerBase
         dreamRemembered = e.DreamRemembered,
         notes = e.Notes,
         isComplete = e.IsComplete,
+        bedTimeEstimated = e.BedTimeEstimated,
     };
 
     private async Task<DateOnly?> ResolveDateAsync(string? date)

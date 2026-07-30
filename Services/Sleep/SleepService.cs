@@ -47,6 +47,7 @@ public class SleepService : ISleepService
 
         entry.BedTime = values.BedTime;
         entry.EstimatedSleepTime = values.EstimatedSleepTime;
+        if (values.BedTimeEstimated is not null) entry.BedTimeEstimated = values.BedTimeEstimated;
         if (values.PhoneBeforeBed is not null) entry.PhoneBeforeBed = values.PhoneBeforeBed;
         if (values.WakeTime is not null) entry.WakeTime = values.WakeTime;
         if (values.TimeOutOfBed is not null) entry.TimeOutOfBed = values.TimeOutOfBed;

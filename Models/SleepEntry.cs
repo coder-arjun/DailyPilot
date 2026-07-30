@@ -22,6 +22,14 @@ public class SleepEntry
     public TimeOnly EstimatedSleepTime { get; set; }
     public bool? PhoneBeforeBed { get; set; }
 
+    /// <summary>
+    /// True when <see cref="BedTime"/>/<see cref="EstimatedSleepTime"/> were synthesized
+    /// (e.g. a morning-only save with no prior evening entry for this date) rather than
+    /// entered by the user via the evening form. Null for rows written before this field
+    /// existed. Never inferred from other fields — always set explicitly by the writer.
+    /// </summary>
+    public bool? BedTimeEstimated { get; set; }
+
     // Morning (nullable until logged)
     public TimeOnly? WakeTime { get; set; }
     public TimeOnly? TimeOutOfBed { get; set; }

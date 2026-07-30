@@ -99,6 +99,10 @@
                     <label class="sl-label" for="slBedTime">Bed time</label>
                     <input type="time" class="form-control" id="slBedTime" name="bedTime" required
                            value="@(Model.EveningEntry?.BedTime.ToString("HH:mm"))" />
+                    @if (Model.EveningEntry?.BedTimeEstimated == true)
+                    {
+                        <span class="sl-field-hint">(estimated — no evening entry logged yet for this night; confirm or adjust before saving)</span>
+                    }
                 </div>
                 <div class="sl-field">
                     <label class="sl-label" for="slEstSleep">Estimated sleep time</label>

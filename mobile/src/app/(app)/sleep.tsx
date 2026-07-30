@@ -88,6 +88,7 @@ export default function SleepScreen() {
   const [bedTime, setBedTime] = useState('22:30');
   const [estimatedSleepTime, setEstimatedSleepTime] = useState<string | null>(null);
   const [phoneBeforeBed, setPhoneBeforeBed] = useState(false);
+  const [bedTimeEstimated, setBedTimeEstimated] = useState(false);
   const [eveningError, setEveningError] = useState('');
 
   useEffect(() => {
@@ -96,6 +97,7 @@ export default function SleepScreen() {
       setBedTime(e.bedTime);
       setEstimatedSleepTime(e.estimatedSleepTime);
       setPhoneBeforeBed(e.phoneBeforeBed ?? false);
+      setBedTimeEstimated(e.bedTimeEstimated ?? false);
     }
   }, [eveningQuery.data]);
 
@@ -123,6 +125,7 @@ export default function SleepScreen() {
         bedTime,
         estimatedSleepTime: estimatedSleepTime || undefined,
         phoneBeforeBed,
+        bedTimeEstimated: false, // the user just entered this — it's no longer a guess
       });
     } catch (e) {
       setEveningError(apiErrorMessage(e));
@@ -141,6 +144,9 @@ export default function SleepScreen() {
         timeOutOfBed: timeOutOfBed || undefined,
         quality,
         dreamRemembered,
+        // Mirrors the web SaveMorning fallback: honestly flag a synthesized bed time so
+        // the evening card never presents a guess as if the user had logged it.
+        bedTimeEstimated: existing ? existing.bedTimeEstimated ?? false : true,
       });
     } catch (e) {
       setMorningError(apiErrorMessage(e));
@@ -337,6 +343,9 @@ export default function SleepScreen() {
                     <Ionicons name="time-outline" size={18} color={colors.muted} />
                     <Text style={styles.pickerText}>{bedTime}</Text>
                   </Pressable>
+                  {bedTimeEstimated ? (
+                    <Muted>(estimated — no evening entry logged yet for this night; confirm or adjust before saving)</Muted>
+                  ) : null}
 
                   <Text style={styles.label}>Estimated sleep time</Text>
                   <Pressable style={styles.pickerField} onPress={() => setPicker('est')}>

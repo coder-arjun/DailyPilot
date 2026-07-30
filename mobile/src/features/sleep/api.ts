@@ -13,6 +13,9 @@ export type SleepEntryDto = {
   dreamRemembered: boolean | null;
   notes: string | null;
   isComplete: boolean;
+  /** True when bedTime was synthesized (no evening entry logged yet for this night)
+   * rather than entered by the user — label it as an estimate, never as real data. */
+  bedTimeEstimated: boolean | null;
 };
 
 export type SleepRecentPointDto = {
@@ -44,8 +47,13 @@ export type SleepInsightsDto = {
   personalized: string[];
 };
 
-/** PUT body — `date`/`bedTime` are the only truly required fields; everything else
- * omitted (undefined) is left untouched server-side rather than cleared. */
+/** PUT body — `date`/`bedTime` are the only truly required fields. `estimatedSleepTime`
+ * is NOT preserved when omitted: the server always (re)computes it, either from the
+ * supplied value or as `bedTime + 15m` (see SleepApiController.Upsert) — same as
+ * `bedTime` itself, it is never "left untouched." Every other optional field —
+ * `wakeTime`, `timeOutOfBed`, `quality`, `phoneBeforeBed`, `dreamRemembered`, `notes`,
+ * `bedTimeEstimated` — genuinely is left untouched server-side when omitted (undefined)
+ * rather than cleared (see SleepService.UpsertAsync's conditional `is not null` writes). */
 export type SleepEntryWrite = {
   date: string;
   bedTime: string;
@@ -56,6 +64,9 @@ export type SleepEntryWrite = {
   phoneBeforeBed?: boolean | null;
   dreamRemembered?: boolean | null;
   notes?: string | null;
+  /** True when `bedTime` above was synthesized rather than user-entered. Pass `false`
+   * explicitly whenever the user saved a real evening entry; omit to leave unchanged. */
+  bedTimeEstimated?: boolean | null;
 };
 
 const keys = {

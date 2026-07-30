@@ -72,6 +72,7 @@ public class SleepController : Controller
             BedTime = bedTime,
             EstimatedSleepTime = estimatedSleepTime ?? bedTime.AddMinutes(15),
             PhoneBeforeBed = phoneBeforeBed,
+            BedTimeEstimated = false, // the user just typed this in — it's no longer a guess
         });
 
         TempData["Success"] = "Evening entry saved.";
@@ -89,8 +90,12 @@ public class SleepController : Controller
 
         // BedTime/EstimatedSleepTime are unconditionally (re)written by UpsertAsync, so the
         // existing evening values must be carried forward explicitly or they'd be clobbered
-        // to default(TimeOnly). If no evening entry exists yet, synthesize a sane bed time.
+        // to default(TimeOnly). If no evening entry exists yet, synthesize a sane bed time —
+        // and honestly flag it as estimated (BedTimeEstimated) so the UI never presents a
+        // guess as if the user had logged it. If an evening entry (or an earlier estimate)
+        // already exists, its BedTime/estimated-flag are carried forward unchanged.
         var existing = await _sleep.GetAsync(user.Id, today);
+        var bedTimeEstimated = existing is null ? true : existing.BedTimeEstimated ?? false;
 
         await _sleep.UpsertAsync(user.Id, new SleepEntry
         {
@@ -98,6 +103,7 @@ public class SleepController : Controller
             BedTime = existing?.BedTime ?? wakeTime.AddHours(-8),
             EstimatedSleepTime = existing?.EstimatedSleepTime ?? wakeTime.AddHours(-8).AddMinutes(15),
             PhoneBeforeBed = existing?.PhoneBeforeBed,
+            BedTimeEstimated = bedTimeEstimated,
             WakeTime = wakeTime,
             TimeOutOfBed = timeOutOfBed ?? wakeTime,
             Quality = Math.Clamp(quality, 1, 10),
