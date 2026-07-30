@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api/client';
+import { playCompletionTone } from '@/lib/sounds';
 
 export type TaskDto = {
   id: number;
@@ -113,6 +114,7 @@ export function useToggleComplete(date?: string) {
     mutationFn: async (task: TaskDto) =>
       api.post(`/tasks/${task.id}/${task.isCompleted ? 'reopen' : 'complete'}`, {}),
     onMutate: async (task) => {
+      if (!task.isCompleted) playCompletionTone(); // completing (not reopening)
       await qc.cancelQueries({ queryKey: key });
       const previous = qc.getQueryData<TaskDto[]>(key);
       qc.setQueryData<TaskDto[]>(key, (old) =>

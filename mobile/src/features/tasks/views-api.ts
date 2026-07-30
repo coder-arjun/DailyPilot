@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api/client';
+import { playCompletionTone } from '@/lib/sounds';
 import type { TaskDto } from './api';
 
 export type CalendarDayDto = { date: string; total: number; completed: number };
@@ -35,6 +36,9 @@ export function useSetStatus() {
   return useMutation({
     mutationFn: async ({ id, status }: { id: number; status: number }) =>
       (await api.post<TaskDto>(`/tasks/${id}/status`, { status })).data,
+    onMutate: ({ status }) => {
+      if (status === 1) playCompletionTone(); // moving into Completed
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['tasks'] });
       qc.invalidateQueries({ queryKey: ['dashboard'] });

@@ -40,7 +40,8 @@
           "color": "#6366F1",
           "defaultChannel": "reminders"
         }
-      ]
+      ],
+      "expo-audio"
     ],
     "experiments": {
       "typedRoutes": true,
