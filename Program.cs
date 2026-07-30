@@ -127,6 +127,7 @@ builder.Services.AddAuthentication()
 builder.Services.AddScoped<DailyPilot.Services.Api.IJwtTokenService, DailyPilot.Services.Api.JwtTokenService>();
 builder.Services.AddScoped<DailyPilot.Services.Api.IRefreshTokenService, DailyPilot.Services.Api.RefreshTokenService>();
 builder.Services.AddScoped<DailyPilot.Services.Api.IFcmPushSender, DailyPilot.Services.Api.FcmPushSender>();
+builder.Services.AddScoped<DailyPilot.Services.Sleep.ISleepService, DailyPilot.Services.Sleep.SleepService>();
 builder.Services.Configure<Microsoft.AspNetCore.Mvc.ApiBehaviorOptions>(o =>
 {
     // API error contract is {"error": "..."} — flatten automatic validation 400s to it.

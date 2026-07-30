@@ -33,6 +33,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IDataPro
 
     public DbSet<ApiRefreshToken> ApiRefreshTokens => Set<ApiRefreshToken>();
     public DbSet<DeviceToken> DeviceTokens => Set<DeviceToken>();
+    public DbSet<SleepEntry> SleepEntries => Set<SleepEntry>();
 
     public DbSet<EventType> EventTypes => Set<EventType>();
     public DbSet<InviteList> InviteLists => Set<InviteList>();
@@ -222,6 +223,18 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IDataPro
             e.HasOne(t => t.User)
                 .WithMany()
                 .HasForeignKey(t => t.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<SleepEntry>(e =>
+        {
+            // One journal entry per user per wake-up date.
+            e.HasIndex(s => new { s.UserId, s.Date }).IsUnique();
+
+            // Single cascade path: User → SleepEntries.
+            e.HasOne(s => s.User)
+                .WithMany()
+                .HasForeignKey(s => s.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
