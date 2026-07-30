@@ -79,32 +79,51 @@ public class FcmPushSender : IFcmPushSender
         var tokens = await _db.DeviceTokens.Where(t => t.UserId == userId).ToListAsync();
         if (tokens.Count == 0) return;
 
-        // Data-only message: the app's background handler displays (and optionally
-        // speaks) it, which works locked/killed. A "notification" block would let the
-        // system display it instead, but then the app never runs and cannot speak.
+        // Hybrid delivery. (1) A notification-message the SYSTEM renders — reliable
+        // in Doze/locked/killed states, independent of our process being allowed to
+        // wake. (2) When the user wants spoken reminders, a companion data-only
+        // message that wakes the app's background handler to speak (best-effort:
+        // OEM battery policy decides whether the wake happens; display never
+        // depends on it). The client dedupes so nothing fires twice.
         var speak = await _db.Users.Where(u => u.Id == userId)
             .Select(u => u.SpeakReminders).FirstOrDefaultAsync();
 
         var pruned = false;
         foreach (var device in tokens)
         {
-            var message = new Message
+            var display = new Message
             {
                 Token = device.Token,
-                Android = new AndroidConfig { Priority = Priority.High },
-                Data = new Dictionary<string, string>
+                Notification = new Notification { Title = title, Body = body },
+                Android = new AndroidConfig
                 {
-                    ["title"] = title,
-                    ["body"] = body,
-                    ["url"] = url ?? "",
-                    ["speak"] = speak ? "1" : "0",
-                    ["channelId"] = Channel,
+                    Priority = Priority.High,
+                    Notification = new AndroidNotification { ChannelId = Channel },
                 },
+                Data = new Dictionary<string, string> { ["url"] = url ?? "", ["kind"] = "display" },
             };
+
+            Message? voice = null;
+            if (speak)
+            {
+                voice = new Message
+                {
+                    Token = device.Token,
+                    Android = new AndroidConfig { Priority = Priority.High },
+                    Data = new Dictionary<string, string>
+                    {
+                        ["kind"] = "speak",
+                        ["title"] = title,
+                        ["body"] = body,
+                        ["speak"] = "1",
+                    },
+                };
+            }
 
             try
             {
-                await _messaging.SendAsync(message);
+                await _messaging.SendAsync(display);
+                if (voice is not null) await _messaging.SendAsync(voice);
             }
             catch (FirebaseMessagingException ex) when (
                 ex.MessagingErrorCode is MessagingErrorCode.Unregistered or MessagingErrorCode.InvalidArgument)

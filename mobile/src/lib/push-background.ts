@@ -24,6 +24,14 @@ export function wasHandled(key: string): boolean {
   return recentlyHandled.has(key);
 }
 
+/** Atomic check-and-mark: true exactly once per key per 90s window. The display
+ *  message and the companion voice message must never both speak. */
+export function claimOnce(key: string): boolean {
+  if (recentlyHandled.has(key)) return false;
+  markHandled(key);
+  return true;
+}
+
 /** TTS engines can stall on pictographs (⏰/🔔 reminder prefixes) — speak clean text. */
 export function sanitizeForSpeech(text: string): string {
   return text
@@ -102,6 +110,19 @@ TaskManager.defineTask(BACKGROUND_NOTIFICATION_TASK, async ({ data, error }) => 
     const body = typeof payload.body === 'string' ? payload.body : '';
     if (!title && !body) return;
 
+    // Hybrid scheme: the SYSTEM renders the notification-message (reliable when
+    // locked/killed); this task only runs for the companion data message and its
+    // sole job is the voice. MUST await the speech — the headless runtime is torn
+    // down the moment this resolves.
+    if (payload.kind === 'speak') {
+      if (payload.speak === '1' && claimOnce(`${title}|${body}`)) {
+        const text = [title, body].filter(Boolean).join('. ');
+        if (text) await speakAndWait(text);
+      }
+      return;
+    }
+
+    // Legacy path (pre-hybrid data-only messages still in flight): display + speak.
     const url = typeof payload.url === 'string' ? payload.url : '';
     const channelId = typeof payload.channelId === 'string' && payload.channelId ? payload.channelId : 'reminders';
     markHandled(`${title}|${body}`);
@@ -118,9 +139,6 @@ TaskManager.defineTask(BACKGROUND_NOTIFICATION_TASK, async ({ data, error }) => 
 
     if (payload.speak === '1') {
       const text = [title, body].filter(Boolean).join('. ');
-      // MUST await: in a headless (killed/locked) context the JS runtime is torn
-      // down as soon as this task resolves — fire-and-forget speech never gets to
-      // make a sound because the TTS engine is still initializing.
       if (text) await speakAndWait(text);
     }
   } catch {

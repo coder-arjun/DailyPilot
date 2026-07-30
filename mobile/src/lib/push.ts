@@ -2,7 +2,7 @@ import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { api } from '@/lib/api/client';
-import { speakAndWait, wasHandled } from '@/lib/push-background';
+import { claimOnce, speakAndWait } from '@/lib/push-background';
 import { queryClient } from '@/lib/queryClient';
 
 /** Foreground presentation: reminders should still show as a banner. */
@@ -88,9 +88,9 @@ async function shouldSpeak(): Promise<boolean> {
 export function watchSpokenReminders(): () => void {
   const sub = Notifications.addNotificationReceivedListener(async (notification) => {
     const { title, body } = notification.request.content;
-    // The background task already displayed+spoke this one (data-only path).
-    if (wasHandled(`${title ?? ''}|${body ?? ''}`)) return;
     if (!(await shouldSpeak())) return;
+    // Exactly-once vs the companion voice data message (background task path).
+    if (!claimOnce(`${title ?? ''}|${body ?? ''}`)) return;
     const text = [title, body].filter(Boolean).join('. ');
     if (text) speakAndWait(text); // shared hardened path — self-heals a wedged engine
   });
