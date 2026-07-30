@@ -373,3 +373,5 @@ Storage/
 .superpowers/
 secrets/
 mobile/google-services.json
+/build
+/Sleep tracker.txt
